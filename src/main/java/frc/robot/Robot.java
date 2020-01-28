@@ -7,6 +7,7 @@
 
 package frc.robot;
 
+import edu.wpi.first.cameraserver.*;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.PWMVictorSPX;
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -22,6 +23,10 @@ public class Robot extends TimedRobot {
   private final DifferentialDrive m_robotDrive = new DifferentialDrive(m_leftMotor, m_rightMotor);
   private final Joystick m_stick = new Joystick(0);
 
+  @Override
+  public void robotInit() {
+    CameraServer.getInstance().startAutomaticCapture();
+  }
   @Override
   public void teleopPeriodic() {
     // Drive with arcade drive.
