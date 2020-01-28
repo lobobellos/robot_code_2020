@@ -27,6 +27,7 @@ public class Robot extends TimedRobot {
   public void robotInit() {
     CameraServer.getInstance().startAutomaticCapture();
   }
+  //if you see this it worked
   @Override
   public void teleopPeriodic() {
     // Drive with arcade drive.
