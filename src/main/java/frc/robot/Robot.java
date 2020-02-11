@@ -9,7 +9,7 @@ package frc.robot;
 
 import edu.wpi.first.cameraserver.*;
 import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.PWMVictorSPX;
+import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 
@@ -18,9 +18,11 @@ import edu.wpi.first.wpilibj.drive.DifferentialDrive;
  * Runs the motors with arcade steering.
  */
 public class Robot extends TimedRobot {
-  private final PWMVictorSPX m_leftMotor = new PWMVictorSPX(0);
-  private final PWMVictorSPX m_rightMotor = new PWMVictorSPX(3);
-  private final DifferentialDrive m_robotDrive = new DifferentialDrive(m_leftMotor, m_rightMotor);
+  private final PWMVictorSPX m_leftMotor_rear = new Spark(0);
+  private final PWMVictorSPX m_leftMotor_front = new Spark(1);
+  private final PMWVictorSPX m_rightMotor_rear = new Spark(2); 
+  private final PWMVictorSPX m_rightMotor_front = new Spark(3);
+  private final DifferentialDrive m_robotDrive = new DifferentialDrive(m_leftMotor_rear, m_rightMotor_rear);
   private final Joystick m_stick = new Joystick(0);
 
   @Override
