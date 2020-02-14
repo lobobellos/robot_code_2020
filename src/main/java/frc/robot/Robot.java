@@ -29,6 +29,9 @@ public class Robot extends TimedRobot {
   private final DifferentialDrive m_robotDrive = new DifferentialDrive(m_left, m_right);
   private final Joystick m_stick = new Joystick(0);
 
+  private final Spark m_intake = new Spark(8);
+  private final Spark m_launch = new Spark(9);
+
   @Override
   public void robotInit() {
     CameraServer.getInstance().startAutomaticCapture();
@@ -46,5 +49,19 @@ public class Robot extends TimedRobot {
     // System.out.println(speed);
 
     m_robotDrive.arcadeDrive(m_stick.getY() * speed, m_stick.getX() * speed);
+
+    // left thumb button activates intake motor
+    if (m_stick.getRawButton(2)) {
+      m_intake.set(0.5);
+    } else {
+      m_intake.set(0);
+    }
+
+    // trigger activates dump motor
+    if(m_stick.getRawButton(1)) {
+      m_launch.set(0.5);
+    } else {
+      m_launch.set(0);
+    }
   }
 }
