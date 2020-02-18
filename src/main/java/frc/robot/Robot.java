@@ -32,11 +32,18 @@ public class Robot extends TimedRobot {
   private final Spark m_intake = new Spark(8);
   private final Spark m_launch = new Spark(9);
 
+  private Boolean intakeState = true;
+  // Store the last state of the intake button, so weird things don't happen when the button is held.
+  private Boolean intakeButtonDown = false;
+
   @Override
   public void robotInit() {
     CameraServer.getInstance().startAutomaticCapture();
   }
-  //if you see this it worked v2
+  @Override
+  public void teleopInit() {
+    intakeState = true;
+  }
   @Override
   public void teleopPeriodic() {
     // Drive with arcade drive.
@@ -50,14 +57,14 @@ public class Robot extends TimedRobot {
 
     m_robotDrive.arcadeDrive(m_stick.getY() * speed, m_stick.getX() * speed);
 
-    // left thumb button activates intake motor
-    if (m_stick.getRawButton(2)) {
-      m_intake.set(0.5);
-    } else {
-      m_intake.set(0);
+    // check if the buttin is down + make sure that the button wasn't down on the last iteration, so the toggle doesn't spazz.
+    if (m_stick.getRawButton(7) && !intakeButtonDown) {
+      intakeState = !intakeState;
     }
-
-    // trigger activates dump motor
+    // set the speed to 0.5 if it should be on, else 0
+    m_intake.set(intakeState ? 0.28 : 0);
+    intakeButtonDown = m_stick.getRawButton(7);
+    // trigger activates elevator/dump motor
     if(m_stick.getRawButton(1)) {
       m_launch.set(0.5);
     } else {
