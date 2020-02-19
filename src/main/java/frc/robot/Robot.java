@@ -18,19 +18,19 @@ import edu.wpi.first.wpilibj.SpeedControllerGroup;
  * Runs the motors with arcade steering.
  */
 public class Robot extends TimedRobot {
-  private final Spark m_leftMotor_rear = new Spark(0);
-  private final Spark m_leftMotor_front = new Spark(1);
-  private final SpeedControllerGroup m_left = new SpeedControllerGroup(m_leftMotor_rear, m_leftMotor_front);
+  private final Spark leftMotorRear = new Spark(0);
+  private final Spark leftMotorFront = new Spark(1);
+  private final SpeedControllerGroup leftMotors = new SpeedControllerGroup(leftMotorRear, leftMotorFront);
   
-  private final Spark m_rightMotor_rear = new Spark(2); 
-  private final Spark m_rightMotor_front = new Spark(3);
-  private final SpeedControllerGroup m_right = new SpeedControllerGroup(m_rightMotor_rear, m_rightMotor_front);
+  private final Spark rightMotorRear = new Spark(2); 
+  private final Spark rightMotorFront = new Spark(3);
+  private final SpeedControllerGroup rightMotors = new SpeedControllerGroup(rightMotorRear, rightMotorFront);
   
-  private final DifferentialDrive m_robotDrive = new DifferentialDrive(m_left, m_right);
-  private final Joystick m_stick = new Joystick(0);
+  private final DifferentialDrive robotDrive = new DifferentialDrive(leftMotors, rightMotors);
+  private final Joystick stick = new Joystick(0);
 
-  private final Spark m_intake = new Spark(8);
-  private final Spark m_launch = new Spark(9);
+  private final Spark intakeMotor = new Spark(8);
+  private final Spark elevatorMotor = new Spark(9);
 
   private Boolean intakeState = true;
   // Store the last state of the intake button, so weird things don't happen when the button is held.
@@ -51,24 +51,24 @@ public class Robot extends TimedRobot {
     // and backward, and the X turns left and right.
 
     // read throttle to computer speed modification
-    Double speed = (-m_stick.getThrottle() + 1) / 2;
+    Double speed = (-stick.getThrottle() + 1) / 2;
     speed = (speed * 0.5) + 0.5;
     // System.out.println(speed);
 
-    m_robotDrive.arcadeDrive(m_stick.getY() * speed, m_stick.getX() * speed);
+    robotDrive.arcadeDrive(stick.getY() * speed, stick.getX() * speed);
 
     // check if the buttin is down + make sure that the button wasn't down on the last iteration, so the toggle doesn't spazz.
-    if (m_stick.getRawButton(7) && !intakeButtonDown) {
+    if (stick.getRawButton(7) && !intakeButtonDown) {
       intakeState = !intakeState;
     }
     // set the speed to 0.5 if it should be on, else 0
-    m_intake.set(intakeState ? 0.28 : 0);
-    intakeButtonDown = m_stick.getRawButton(7);
+    intakeMotor.set(intakeState ? 0.45 : 0);
+    intakeButtonDown = stick.getRawButton(7);
     // trigger activates elevator/dump motor
-    if(m_stick.getRawButton(1)) {
-      m_launch.set(0.5);
+    if(stick.getRawButton(1)) {
+      elevatorMotor.set(0.5);
     } else {
-      m_launch.set(0);
+      elevatorMotor.set(0);
     }
   }
 }
