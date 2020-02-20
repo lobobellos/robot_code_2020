@@ -7,25 +7,30 @@
 
 package frc.robot;
 
+import edu.wpi.cscore.UsbCamera;
+import edu.wpi.cscore.VideoSink;
 import edu.wpi.first.cameraserver.*;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
+
 /**
- * This is a demo program showing the use of the DifferentialDrive class.
- * Runs the motors with arcade steering.
+ * This is a demo program showing the use of the DifferentialDrive class. Runs
+ * the motors with arcade steering.
  */
 public class Robot extends TimedRobot {
   private final Spark leftMotorRear = new Spark(0);
   private final Spark leftMotorFront = new Spark(1);
   private final SpeedControllerGroup leftMotors = new SpeedControllerGroup(leftMotorRear, leftMotorFront);
-  
-  private final Spark rightMotorRear = new Spark(2); 
+
+  private final Spark rightMotorRear = new Spark(2);
   private final Spark rightMotorFront = new Spark(3);
   private final SpeedControllerGroup rightMotors = new SpeedControllerGroup(rightMotorRear, rightMotorFront);
-  
+
   private final DifferentialDrive robotDrive = new DifferentialDrive(leftMotors, rightMotors);
   private final Joystick stick = new Joystick(0);
 
@@ -33,12 +38,17 @@ public class Robot extends TimedRobot {
   private final Spark elevatorMotor = new Spark(9);
 
   private Boolean intakeState = true;
-  // Store the last state of the intake button, so weird things don't happen when the button is held.
-  private Boolean intakeButtonDown = false;
 
+  private int direction = 0; // 0: intake front, 1:
+
+  private VideoSink cameraServer;
+  private UsbCamera frontCamera;
+  private UsbCamera backCamera;
   @Override
   public void robotInit() {
-    CameraServer.getInstance().startAutomaticCapture();
+    frontCamera = CameraServer.getInstance().startAutomaticCapture();
+    backCamera = CameraServer.getInstance().startAutomaticCapture();
+    cameraServer = CameraServer.getInstance().getServer();
   }
   @Override
   public void teleopInit() {
@@ -46,6 +56,7 @@ public class Robot extends TimedRobot {
   }
   @Override
   public void teleopPeriodic() {
+    Scheduler.getInstance().run();
     // Drive with arcade drive.
     // That means that the Y axis drives forward
     // and backward, and the X turns left and right.
@@ -54,21 +65,51 @@ public class Robot extends TimedRobot {
     Double speed = (-stick.getThrottle() + 1) / 2;
     speed = (speed * 0.5) + 0.5;
     // System.out.println(speed);
-
-    robotDrive.arcadeDrive(stick.getY() * speed, stick.getX() * speed);
+    double driveSpeed = stick.getY() * speed;
+    double driveRotation = stick.getX() * speed;
+    if (direction == 1) {
+      driveSpeed = -driveSpeed;
+    }
+    robotDrive.arcadeDrive(driveSpeed, driveRotation);
 
     // check if the buttin is down + make sure that the button wasn't down on the last iteration, so the toggle doesn't spazz.
-    if (stick.getRawButton(7) && !intakeButtonDown) {
+    if (stick.getRawButtonPressed(7)) {
       intakeState = !intakeState;
     }
     // set the speed to 0.5 if it should be on, else 0
     intakeMotor.set(intakeState ? 0.45 : 0);
-    intakeButtonDown = stick.getRawButton(7);
+    if (stick.getRawButtonPressed(2)) {
+      switch (direction) {
+        case 0:
+          direction = 1;
+          cameraServer.setSource(backCamera);
+          break;
+        case 1:
+          direction = 0;
+          cameraServer.setSource(frontCamera);
+          break;
+      }
+
+    }
+
     // trigger activates elevator/dump motor
     if(stick.getRawButton(1)) {
       elevatorMotor.set(0.5);
     } else {
       elevatorMotor.set(0);
     }
+  }
+
+  private Double speed = 0.;
+  private Double rotation = 0.;
+  @Override
+  public void autonomousInit() {
+    speed = .2;
+    Timer.delay(1);
+    speed = 0.;
+  }
+  @Override
+  public void autonomousPeriodic() {
+    robotDrive.arcadeDrive(speed, rotation);
   }
 }
