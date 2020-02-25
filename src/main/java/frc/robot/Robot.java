@@ -44,6 +44,7 @@ public class Robot extends TimedRobot {
   private VideoSink cameraServer;
   private UsbCamera frontCamera;
   private UsbCamera backCamera;
+  private double elevatorStart = 0;
   @Override
   public void robotInit() {
     frontCamera = CameraServer.getInstance().startAutomaticCapture();
@@ -72,7 +73,7 @@ public class Robot extends TimedRobot {
     }
     robotDrive.arcadeDrive(driveSpeed, driveRotation);
 
-    // check if the buttin is down + make sure that the button wasn't down on the last iteration, so the toggle doesn't spazz.
+    // toggle intake on button press
     if (stick.getRawButtonPressed(7)) {
       intakeState = !intakeState;
     }
@@ -92,24 +93,19 @@ public class Robot extends TimedRobot {
 
     }
 
-    // trigger activates elevator/dump motor
-    if(stick.getRawButton(1)) {
-      elevatorMotor.set(0.5);
-    } else {
-      elevatorMotor.set(0);
+    // trigger activates elevator/dump motor for 1 second
+    if (stick.getRawButtonPressed(1)) {
+      elevatorStart = Timer.getFPGATimestamp();
     }
+    elevatorMotor.set(Timer.getFPGATimestamp() < elevatorStart + 1 /* seconds */ ? 0.5 : 0);
   }
-
-  private Double speed = 0.;
-  private Double rotation = 0.;
+  private double autonomousStart;
   @Override
   public void autonomousInit() {
-    speed = .2;
-    Timer.delay(1);
-    speed = 0.;
+    autonomousStart = Timer.getFPGATimestamp();
   }
   @Override
   public void autonomousPeriodic() {
-    robotDrive.arcadeDrive(speed, rotation);
+    // TODO
   }
 }
