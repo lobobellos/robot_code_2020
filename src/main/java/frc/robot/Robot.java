@@ -11,6 +11,7 @@ import edu.wpi.cscore.UsbCamera;
 import edu.wpi.cscore.VideoSink;
 import edu.wpi.first.cameraserver.*;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
@@ -37,7 +38,7 @@ public class Robot extends TimedRobot {
   private final Spark intakeMotor = new Spark(8);
   private final Spark elevatorMotor = new Spark(9);
 
-  private Boolean intakeState = true;
+  private Boolean intakeState = false;
 
   private int direction = 0; // 0: intake front, 1:
 
@@ -53,7 +54,7 @@ public class Robot extends TimedRobot {
   }
   @Override
   public void teleopInit() {
-    intakeState = true;
+    intakeState = false;
   }
   @Override
   public void teleopPeriodic() {
@@ -73,12 +74,24 @@ public class Robot extends TimedRobot {
     }
     robotDrive.arcadeDrive(driveSpeed, driveRotation);
 
+
+    // since a lower battery means a slower motor, we need to scale the time
+    double elevatorMotorTime = 1 * (12 / RobotController.getBatteryVoltage());
+    boolean elevatorMotorRunning = Timer.getFPGATimestamp() < elevatorStart + elevatorMotorTime;
+    elevatorMotor.set(elevatorMotorRunning ? 0.5 : 0);
+
+    // trigger starts elevator/dump motor
+    if (stick.getRawButtonPressed(1) && !elevatorMotorRunning) {
+      elevatorStart = Timer.getFPGATimestamp();
+    }
+
+
     // toggle intake on button press
     if (stick.getRawButtonPressed(7)) {
       intakeState = !intakeState;
     }
     // set the speed to 0.5 if it should be on, else 0
-    intakeMotor.set(intakeState ? 0.45 : 0);
+    intakeMotor.set(intakeState && !elevatorMotorRunning ? 0.45 : 0);
     if (stick.getRawButtonPressed(2)) {
       switch (direction) {
         case 0:
@@ -92,12 +105,6 @@ public class Robot extends TimedRobot {
       }
 
     }
-
-    // trigger activates elevator/dump motor for 1 second
-    if (stick.getRawButtonPressed(1)) {
-      elevatorStart = Timer.getFPGATimestamp();
-    }
-    elevatorMotor.set(Timer.getFPGATimestamp() < elevatorStart + 1 /* seconds */ ? 0.5 : 0);
   }
   private double autonomousStart;
   @Override
