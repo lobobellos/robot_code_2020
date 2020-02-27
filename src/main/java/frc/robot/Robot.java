@@ -44,7 +44,7 @@ public class Robot extends TimedRobot {
   private final DigitalInputManager spacingSwitch = new DigitalInputManager(5);
 
   private Boolean intakeState = false;
-  private Boolean elevatorMotorRunning = false;
+  //private Boolean elevatorMotorRunning = false;
   private int direction = 0; // 0: intake front, 1:
 
   private VideoSink cameraServer;
@@ -81,8 +81,8 @@ public class Robot extends TimedRobot {
 
 
     // since a lower battery means a slower motor, we need to scale the time
-    // double elevatorMotorTime = 1 * (12 / RobotController.getBatteryVoltage());
-    // boolean elevatorMotorRunning =  Timer.getFPGATimestamp() < elevatorStart + elevatorMotorTime;
+    double elevatorMotorTime = 0.3 * (12 / RobotController.getBatteryVoltage());
+    boolean elevatorMotorRunning =  Timer.getFPGATimestamp() < elevatorStart + elevatorMotorTime;
 
 
     // turn the elevator motor on when the capture switch is pressed
@@ -95,23 +95,24 @@ public class Robot extends TimedRobot {
     if (spacingSwitch.pressed()) {
       elevatorMotorRunning = false;
     }
-    elevatorMotor.set(elevatorMotorRunning ? 0.5 : 0);
+
+    elevatorMotor.set(elevatorMotorRunning || stick.getRawButton(1) ? 1 : 0);
 
     
 
-    // trigger starts elevator/dump motor
-    /*
-    if (stick.getRawButtonPressed(1) && !elevatorMotorRunning) {
+    // start elevator/dump motor
+    
+    if (stick.getRawButtonPressed(5) && !elevatorMotorRunning) {
       elevatorStart = Timer.getFPGATimestamp();
     }
-    */
+    
 
     // toggle intake on button press
     if (stick.getRawButtonPressed(7)) {
       intakeState = !intakeState;
     }
     // set the speed to 0.5 if it should be on, else 0
-    intakeMotor.set(intakeState && !elevatorMotorRunning ? 0.45 : 0);
+    intakeMotor.set(intakeState && !elevatorMotorRunning ? 0.85 : 0);
     if (stick.getRawButtonPressed(2)) {
       switch (direction) {
         case 0:
