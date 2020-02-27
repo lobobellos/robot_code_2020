@@ -10,6 +10,7 @@ package frc.robot;
 import edu.wpi.cscore.UsbCamera;
 import edu.wpi.cscore.VideoSink;
 import edu.wpi.first.cameraserver.*;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Spark;
@@ -17,6 +18,7 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import frc.robot.utils.DigitalInputManager;
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
 
 /**
@@ -38,8 +40,11 @@ public class Robot extends TimedRobot {
   private final Spark intakeMotor = new Spark(8);
   private final Spark elevatorMotor = new Spark(9);
 
-  private Boolean intakeState = false;
+  private final DigitalInputManager captureSwitch = new DigitalInputManager(3);
+  private final DigitalInputManager spacingSwitch = new DigitalInputManager(5);
 
+  private Boolean intakeState = false;
+  private Boolean elevatorMotorRunning = false;
   private int direction = 0; // 0: intake front, 1:
 
   private VideoSink cameraServer;
@@ -76,15 +81,30 @@ public class Robot extends TimedRobot {
 
 
     // since a lower battery means a slower motor, we need to scale the time
-    double elevatorMotorTime = 1 * (12 / RobotController.getBatteryVoltage());
-    boolean elevatorMotorRunning = Timer.getFPGATimestamp() < elevatorStart + elevatorMotorTime;
+    // double elevatorMotorTime = 1 * (12 / RobotController.getBatteryVoltage());
+    // boolean elevatorMotorRunning =  Timer.getFPGATimestamp() < elevatorStart + elevatorMotorTime;
+
+
+    // turn the elevator motor on when the capture switch is pressed
+    captureSwitch.periodic();
+    if (captureSwitch.pressed()) {
+      elevatorMotorRunning = true;
+    }
+    // stop it once the spacing switch is pressed
+    spacingSwitch.periodic();
+    if (spacingSwitch.pressed()) {
+      elevatorMotorRunning = false;
+    }
     elevatorMotor.set(elevatorMotorRunning ? 0.5 : 0);
 
+    
+
     // trigger starts elevator/dump motor
+    /*
     if (stick.getRawButtonPressed(1) && !elevatorMotorRunning) {
       elevatorStart = Timer.getFPGATimestamp();
     }
-
+    */
 
     // toggle intake on button press
     if (stick.getRawButtonPressed(7)) {
@@ -103,7 +123,6 @@ public class Robot extends TimedRobot {
           cameraServer.setSource(frontCamera);
           break;
       }
-
     }
   }
   private double autonomousStart;
@@ -113,6 +132,25 @@ public class Robot extends TimedRobot {
   }
   @Override
   public void autonomousPeriodic() {
+    double delta = Timer.getFPGATimestamp() - autonomousStart;
+    int state;
+    if (delta < 2) {
+      state = 1;
+    } else if (delta < 4) {
+      state = 2;
+    } else {
+      state = 0;
+    }
+    if (state == 1) {
+      robotDrive.arcadeDrive(-0.7, 0);
+    } else {
+      robotDrive.arcadeDrive(0, 0);
+    }
+    if (state == 2) {
+      elevatorMotor.set(0.5);
+    } else {
+      elevatorMotor.set(0);
+    }
     // TODO
   }
 }
