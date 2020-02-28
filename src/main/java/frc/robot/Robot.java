@@ -40,13 +40,15 @@ public class Robot extends TimedRobot {
   private final Spark intakeMotor = new Spark(8);
   private final Spark elevatorMotor = new Spark(9);
 
-  private final DigitalInputManager captureSwitch = new DigitalInputManager(3);
-  private final DigitalInputManager spacingSwitch = new DigitalInputManager(5);
+ // private final DigitalInputManager captureSwitch = new DigitalInputManager(4);
+ // private final DigitalInputManager spacingSwitch = new DigitalInputManager(5);
 
   private Boolean intakeState = false;
   //private Boolean elevatorMotorRunning = false;
   private int direction = 0; // 0: intake front, 1:
 
+  DigitalInput spacingSwitch;
+  DigitalInput captureSwitch;
   private VideoSink cameraServer;
   private UsbCamera frontCamera;
   private UsbCamera backCamera;
@@ -56,6 +58,8 @@ public class Robot extends TimedRobot {
     frontCamera = CameraServer.getInstance().startAutomaticCapture();
     backCamera = CameraServer.getInstance().startAutomaticCapture();
     cameraServer = CameraServer.getInstance().getServer();
+    captureSwitch = new DigitalInput(5);
+    spacingSwitch = new DigitalInput(4);
   }
   @Override
   public void teleopInit() {
@@ -81,18 +85,23 @@ public class Robot extends TimedRobot {
 
 
     // since a lower battery means a slower motor, we need to scale the time
-    double elevatorMotorTime = 0.3 * (12 / RobotController.getBatteryVoltage());
+    double elevatorMotorTime = 8 * (12 / RobotController.getBatteryVoltage());
     boolean elevatorMotorRunning =  Timer.getFPGATimestamp() < elevatorStart + elevatorMotorTime;
 
 
     // turn the elevator motor on when the capture switch is pressed
-    captureSwitch.periodic();
-    if (captureSwitch.pressed()) {
-      elevatorMotorRunning = true;
-    }
-    // stop it once the spacing switch is pressed
-    spacingSwitch.periodic();
-    if (spacingSwitch.pressed()) {
+    //captureSwitch.periodic();
+    if (captureSwitch.get()) {
+      
+        elevatorMotorRunning = true;
+        
+        
+      }
+      //elevatorStart = 1;
+    
+    //// stop it once the spacing switch is pressed
+    //spacingSwitch.periodic();
+    if (spacingSwitch.get()) {
       elevatorMotorRunning = false;
     }
 
@@ -126,6 +135,11 @@ public class Robot extends TimedRobot {
       }
     }
   }
+
+
+
+
+
   private double autonomousStart;
   @Override
   public void autonomousInit() {
