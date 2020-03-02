@@ -21,11 +21,8 @@ import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import frc.robot.utils.DigitalInputManager;
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
 
-/**
- * This is a demo program showing the use of the DifferentialDrive class. Runs
- * the motors with arcade steering.
- */
 public class Robot extends TimedRobot {
+
   private final Spark leftMotorRear = new Spark(0);
   private final Spark leftMotorFront = new Spark(1);
   private final SpeedControllerGroup leftMotors = new SpeedControllerGroup(leftMotorRear, leftMotorFront);
@@ -63,14 +60,14 @@ public class Robot extends TimedRobot {
   private UsbCamera backCamera;
   
   // these variables are timers that track...
-  private double elevatorStart = 0; // when the elevator starts running
+  private double elevatorStart; // when the elevator starts running
   private double elevatorEnd = -1; // when the elevator should stop running
   private double autonomousStart; // when autonomous mode starts
   private double autophase1; // the duration of autonomous phase1
   private double autophase2; // the duration of autonomous phase2
 
   @Override
-  // when the robot boots up, configure the cameras
+  // when the robot boots up, configure the cameras and create the switches
   public void robotInit() {
     frontCamera = CameraServer.getInstance().startAutomaticCapture();
     backCamera = CameraServer.getInstance().startAutomaticCapture();
@@ -89,7 +86,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic() {
-    // FIXME - what purpose does this serve?
+    // TODO - what purpose does this serve?
     Scheduler.getInstance().run();
 
     // Drive with arcade drive.
@@ -121,7 +118,7 @@ public class Robot extends TimedRobot {
     // set the speed of intake motor to X if it should be on, else 0
     // TODO: parametrize this as a class constant
     if (intakeState) {
-      intakeMotor.set(0.85); // TODO: tune based on battery level and performance
+      intakeMotor.set(0.45);
     } else {
       intakeMotor.set(0);
     }
@@ -139,7 +136,8 @@ public class Robot extends TimedRobot {
           direction = 0;
           cameraServer.setSource(frontCamera);
           break;
-      } 
+      }
+    }
 
     // since a lower battery means a slower motor, we need to scale the time
     double elevatorMotorTime = 8 * (12 / RobotController.getBatteryVoltage());
@@ -169,7 +167,7 @@ public class Robot extends TimedRobot {
     // Button 1 is the main trigger
     if (stick.getRawButtonPressed(1)) {
       elevatorStart = Timer.getFPGATimestamp();
-      elevatorEnd = elevatorStart + 1;
+      elevatorEnd = elevatorStart + 1; // run the elevator for this many seconds
     }
 
     if (Timer.getFPGATimestamp() < elevatorEnd) {
@@ -179,7 +177,7 @@ public class Robot extends TimedRobot {
     }
 
   }
-
+  
   @Override
   public void autonomousInit() {
     autonomousStart = Timer.getFPGATimestamp();
