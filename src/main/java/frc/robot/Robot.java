@@ -51,8 +51,11 @@ public class Robot extends TimedRobot {
   private UsbCamera backCamera;
   
   // these variables are timers that track...
-  private double elevatorStart = 0; // when the elevator starts running
+  private double elevatorStart; // when the elevator starts running
+  private double elevatorEnd = -1; // when the elevator should stop running
   private double autonomousStart; // when autonomous mode starts
+  private double autophase1; // the duration of autonomous phase1
+  private double autophase2; // the duration of autonomous phase2
 
   @Override
   // when the robot boots up, configure the cameras
@@ -61,7 +64,7 @@ public class Robot extends TimedRobot {
     backCamera = CameraServer.getInstance().startAutomaticCapture();
     cameraServer = CameraServer.getInstance().getServer();
   }
-  
+
   @Override
   // when entering teleop mode, we need to set the intake motor as running (or not)
   // leaving this false is probably the safer bet, though in competition we may want it to be true so that the
@@ -103,8 +106,12 @@ public class Robot extends TimedRobot {
 
     // set the speed of intake motor to X if it should be on, else 0
     // TODO: parametrize this as a class constant
-    intakeMotor.set(intakeState ? 0.45 : 0);
-    
+    if (intakeState) {
+      intakeMotor.set(0.45);
+    } else {
+      intakeMotor.set(0);
+    }
+
     // based on a button press, invert the definition of the "front" of the robot
     // main involved inverting controls and which camera is used
     // Button 2 is the right thumb trigger
