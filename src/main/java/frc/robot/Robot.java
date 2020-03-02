@@ -37,48 +37,77 @@ public class Robot extends TimedRobot {
   private final Spark intakeMotor = new Spark(8);
   private final Spark elevatorMotor = new Spark(9);
 
+  // this variable tracks whether or not the intake motor should be running
   private Boolean intakeState = true;
 
-  private int direction = 0; // 0: intake front, 1:
+  // this variable tracks which end of the robot is currently defined as the "front" of the robot for
+  // purposes of steering and camera
+  // 0 = intake end is front
+  // 1 = output is front
+  private int direction = 0;
 
   private VideoSink cameraServer;
   private UsbCamera frontCamera;
   private UsbCamera backCamera;
-  private double elevatorStart = 0;
+  
+  // these variables are timers that track...
+  private double elevatorStart = 0; // when the elevator starts running
+  private double autonomousStart; // when autonomous mode starts
+
   @Override
+  // when the robot boots up, configure the cameras
   public void robotInit() {
     frontCamera = CameraServer.getInstance().startAutomaticCapture();
     backCamera = CameraServer.getInstance().startAutomaticCapture();
     cameraServer = CameraServer.getInstance().getServer();
   }
+  
   @Override
+  // when entering teleop mode, we need to set the intake motor as running (or not)
+  // leaving this false is probably the safer bet, though in competition we may want it to be true so that the
+  // driver need not remember to activate the intake motor
   public void teleopInit() {
-    intakeState = true;
+    intakeState = false;
   }
+
   @Override
   public void teleopPeriodic() {
+    // FIXME - what purpose does this serve?
     Scheduler.getInstance().run();
+
     // Drive with arcade drive.
     // That means that the Y axis drives forward
     // and backward, and the X turns left and right.
 
-    // read throttle to computer speed modification
+    // read throttle to compute speed modification
     Double speed = (-stick.getThrottle() + 1) / 2;
     speed = (speed * 0.5) + 0.5;
-    // System.out.println(speed);
+    // System.out.println(speed); // debug
+
+    // apply speed modification based on throttle
     double driveSpeed = stick.getY() * speed;
     double driveRotation = stick.getX() * speed;
+
+    // invert direction based on current configuration
     if (direction == 1) {
       driveSpeed = -driveSpeed;
     }
+
+    // instantaneous propulsion is based on the computed speed and rotation
     robotDrive.arcadeDrive(driveSpeed, driveRotation);
 
-    // toggle intake on button press
+    // toggle intake motor state based on button press
     if (stick.getRawButtonPressed(7)) {
       intakeState = !intakeState;
     }
-    // set the speed to 0.5 if it should be on, else 0
+
+    // set the speed of intake motor to X if it should be on, else 0
+    // TODO: parametrize this as a class constant
     intakeMotor.set(intakeState ? 0.45 : 0);
+    
+    // based on a button press, invert the definition of the "front" of the robot
+    // main involved inverting controls and which camera is used
+    // Button 2 is the right thumb trigger
     if (stick.getRawButtonPressed(2)) {
       switch (direction) {
         case 0:
@@ -90,16 +119,18 @@ public class Robot extends TimedRobot {
           cameraServer.setSource(frontCamera);
           break;
       }
-
     }
 
-    // trigger activates elevator/dump motor for 1 second
+    // trigger activates elevator/dump motor for X seconds at Y speed
+    // TODO: parametrize these two values
+    // Button 1 is the main trigger
     if (stick.getRawButtonPressed(1)) {
       elevatorStart = Timer.getFPGATimestamp();
     }
     elevatorMotor.set(Timer.getFPGATimestamp() < elevatorStart + 1 /* seconds */ ? 0.5 : 0);
+  
   }
-  private double autonomousStart;
+  
   @Override
   public void autonomousInit() {
     autonomousStart = Timer.getFPGATimestamp();
