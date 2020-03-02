@@ -10,12 +10,15 @@ package frc.robot;
 import edu.wpi.cscore.UsbCamera;
 import edu.wpi.cscore.VideoSink;
 import edu.wpi.first.cameraserver.*;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import frc.robot.utils.DigitalInputManager;
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
 
 /**
@@ -46,12 +49,21 @@ public class Robot extends TimedRobot {
   // 1 = output is front
   private int direction = 0;
 
+  // switches on intake/elevator
+  // private final DigitalInputManager captureSwitch = new DigitalInputManager(4);
+  // private final DigitalInputManager spacingSwitch = new DigitalInputManager(5);
+
+  //private Boolean elevatorMotorRunning = false;
+
+  DigitalInput spacingSwitch;
+  DigitalInput captureSwitch;
+
   private VideoSink cameraServer;
   private UsbCamera frontCamera;
   private UsbCamera backCamera;
   
   // these variables are timers that track...
-  private double elevatorStart; // when the elevator starts running
+  private double elevatorStart = 0; // when the elevator starts running
   private double elevatorEnd = -1; // when the elevator should stop running
   private double autonomousStart; // when autonomous mode starts
   private double autophase1; // the duration of autonomous phase1
@@ -63,6 +75,8 @@ public class Robot extends TimedRobot {
     frontCamera = CameraServer.getInstance().startAutomaticCapture();
     backCamera = CameraServer.getInstance().startAutomaticCapture();
     cameraServer = CameraServer.getInstance().getServer();
+    captureSwitch = new DigitalInput(5);
+    spacingSwitch = new DigitalInput(4);
   }
 
   @Override
@@ -107,7 +121,7 @@ public class Robot extends TimedRobot {
     // set the speed of intake motor to X if it should be on, else 0
     // TODO: parametrize this as a class constant
     if (intakeState) {
-      intakeMotor.set(0.45);
+      intakeMotor.set(0.85); // TODO: tune based on battery level and performance
     } else {
       intakeMotor.set(0);
     }
@@ -125,7 +139,29 @@ public class Robot extends TimedRobot {
           direction = 0;
           cameraServer.setSource(frontCamera);
           break;
-      }
+      } 
+
+    // since a lower battery means a slower motor, we need to scale the time
+    double elevatorMotorTime = 8 * (12 / RobotController.getBatteryVoltage());
+    boolean elevatorMotorRunning = Timer.getFPGATimestamp() < elevatorStart + elevatorMotorTime;
+
+    // turn the elevator motor on when the capture switch is pressed
+    //captureSwitch.periodic();
+    if (captureSwitch.get()) {
+        elevatorMotorRunning = true;
+    }
+    
+    // stop it once the spacing switch is pressed
+    //spacingSwitch.periodic();
+    if (spacingSwitch.get()) {
+      elevatorMotorRunning = false;
+    }
+
+    elevatorMotor.set(elevatorMotorRunning || stick.getRawButton(1) ? 1 : 0);
+
+    // start elevator/dump moto
+    if (stick.getRawButtonPressed(5) && !elevatorMotorRunning) {
+      elevatorStart = Timer.getFPGATimestamp();
     }
 
     // trigger activates elevator/dump motor for X seconds at Y speed
@@ -143,21 +179,36 @@ public class Robot extends TimedRobot {
     }
 
   }
-  
+
   @Override
   public void autonomousInit() {
     autonomousStart = Timer.getFPGATimestamp();
-    autophase1 = autonomousStart + 2; // phase 1 lasts 4 seconds
   }
 
   @Override
   public void autonomousPeriodic() {
-    // TODO
-   if (Timer.getFPGATimestamp() < autophase1) {
-     robotDrive.arcadeDrive(.60, 0);
-   } else {
-     robotDrive.arcadeDrive(0, 0);
-   }
-     
+
+    double delta = Timer.getFPGATimestamp() - autonomousStart;
+    int state;
+    if (delta < 2) {
+      state = 1;
+    } else if (delta < 4) {
+      state = 2;
+    } else {
+      state = 0;
+    }
+
+    if (state == 1) {
+      robotDrive.arcadeDrive(-0.7, 0);
+    } else {
+      robotDrive.arcadeDrive(0, 0);
+    }
+
+    if (state == 2) {
+      elevatorMotor.set(0.5);
+    } else {
+      elevatorMotor.set(0);
+    }
+    
   }
 }
