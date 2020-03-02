@@ -133,17 +133,31 @@ public class Robot extends TimedRobot {
     // Button 1 is the main trigger
     if (stick.getRawButtonPressed(1)) {
       elevatorStart = Timer.getFPGATimestamp();
+      elevatorEnd = elevatorStart + 1;
     }
-    elevatorMotor.set(Timer.getFPGATimestamp() < elevatorStart + 1 /* seconds */ ? 0.5 : 0);
-  
+
+    if (Timer.getFPGATimestamp() < elevatorEnd) {
+      elevatorMotor.set(0.5);
+    } else {
+      elevatorMotor.set(0);
+    }
+
   }
   
   @Override
   public void autonomousInit() {
     autonomousStart = Timer.getFPGATimestamp();
+    autophase1 = autonomousStart + 2; // phase 1 lasts 4 seconds
   }
+
   @Override
   public void autonomousPeriodic() {
     // TODO
+   if (Timer.getFPGATimestamp() < autophase1) {
+     robotDrive.arcadeDrive(.60, 0);
+   } else {
+     robotDrive.arcadeDrive(0, 0);
+   }
+     
   }
 }
