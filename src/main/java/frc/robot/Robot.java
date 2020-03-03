@@ -118,7 +118,7 @@ public class Robot extends TimedRobot {
     // set the speed of intake motor to X if it should be on, else 0
     // TODO: parametrize this as a class constant
     if (intakeState) {
-      intakeMotor.set(0.45);
+      intakeMotor.set(0.8);
     } else {
       intakeMotor.set(0);
     }
@@ -167,11 +167,12 @@ public class Robot extends TimedRobot {
     // Button 1 is the main trigger
     if (stick.getRawButtonPressed(1)) {
       elevatorStart = Timer.getFPGATimestamp();
-      elevatorEnd = elevatorStart + 1; // run the elevator for this many seconds
+      elevatorEnd = elevatorStart + .65 * 1.2; // run the elevator for this many seconds
     }
 
     if (Timer.getFPGATimestamp() < elevatorEnd) {
-      elevatorMotor.set(0.5);
+      elevatorMotor.set(1);
+      intakeMotor.set(0);
     } else {
       elevatorMotor.set(0);
     }
