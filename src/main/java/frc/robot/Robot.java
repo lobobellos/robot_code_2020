@@ -77,6 +77,8 @@ public class Robot extends TimedRobot {
   private final double INTAKE_SPEED = 0.8;
   private final double ELEVATOR_SPEED = 1.0;
 
+  private int automode;
+
   @Override
   // when the robot boots up, configure the cameras and create the switches
   public void robotInit() {
@@ -206,11 +208,21 @@ public class Robot extends TimedRobot {
   @Override
   public void autonomousInit() {
     autonomousStart = Timer.getFPGATimestamp();
+
+    if (spacingSwitch.pressed()) {
+      automode = 2;
+    } else {
+      automode = 1;
+    }
   }
 
   @Override
   public void autonomousPeriodic() {
-    autonomous1();
+    if (automode == 1) {
+      autonomous1();
+    } else if (automode == 2) {
+      autonomous2();
+    }
   }
 
   private void autonomous1() {
