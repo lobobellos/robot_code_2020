@@ -10,16 +10,18 @@ package frc.robot;
 import edu.wpi.cscore.UsbCamera;
 import edu.wpi.cscore.VideoSink;
 import edu.wpi.first.cameraserver.*;
-import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import frc.robot.utils.DigitalInputManager;
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
+import com.revrobotics.ColorSensorV3;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
 
 public class Robot extends TimedRobot {
 
@@ -37,6 +39,8 @@ public class Robot extends TimedRobot {
   private final Spark intakeMotor = new Spark(8);
   private final Spark elevatorMotor = new Spark(9);
 
+  private final ColorSensorV3 colorSensor = new ColorSensorV3(I2C.Port.kOnboard);
+
   // this variable tracks whether or not the intake motor should be running
   private Boolean intakeState = true;
 
@@ -50,10 +54,9 @@ public class Robot extends TimedRobot {
   // private final DigitalInputManager captureSwitch = new DigitalInputManager(4);
   // private final DigitalInputManager spacingSwitch = new DigitalInputManager(5);
 
-  //private Boolean elevatorMotorRunning = false;
+  private Boolean elevatorIntaking = false; // true after capture switch is hit
 
-  DigitalInput spacingSwitch;
-  DigitalInput captureSwitch;
+  DigitalInputManager spacingSwitch;
 
   private VideoSink cameraServer;
   private UsbCamera frontCamera;
@@ -66,14 +69,20 @@ public class Robot extends TimedRobot {
   private double autophase1; // the duration of autonomous phase1
   private double autophase2; // the duration of autonomous phase2
 
+  private int intakeThreshold = 1000; // proximity sensor reading that triggers intake
+  private boolean lastProximityState = false;
+  private double elevatorIntakingDelay = 1;
+  private double elevatorIntakingDelayStart = 0;
+  private int balls = 0;
+
+
   @Override
   // when the robot boots up, configure the cameras and create the switches
   public void robotInit() {
     frontCamera = CameraServer.getInstance().startAutomaticCapture();
     backCamera = CameraServer.getInstance().startAutomaticCapture();
     cameraServer = CameraServer.getInstance().getServer();
-    captureSwitch = new DigitalInput(5);
-    spacingSwitch = new DigitalInput(4);
+    spacingSwitch = new DigitalInputManager(5);
   }
 
   @Override
@@ -86,8 +95,6 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic() {
-    // TODO - what purpose does this serve?
-    Scheduler.getInstance().run();
 
     // Drive with arcade drive.
     // That means that the Y axis drives forward
@@ -117,7 +124,7 @@ public class Robot extends TimedRobot {
 
     // set the speed of intake motor to X if it should be on, else 0
     // TODO: parametrize this as a class constant
-    if (intakeState) {
+    if (intakeState && balls != 4) {
       intakeMotor.set(0.8);
     } else {
       intakeMotor.set(0);
@@ -138,45 +145,54 @@ public class Robot extends TimedRobot {
           break;
       }
     }
-
     // since a lower battery means a slower motor, we need to scale the time
     double elevatorMotorTime = 8 * (12 / RobotController.getBatteryVoltage());
-    boolean elevatorMotorRunning = Timer.getFPGATimestamp() < elevatorStart + elevatorMotorTime;
+    boolean elevatorMotorRunning = elevatorIntaking || Timer.getFPGATimestamp() < elevatorStart + elevatorMotorTime;
 
-    // turn the elevator motor on when the capture switch is pressed
-    //captureSwitch.periodic();
-    if (captureSwitch.get()) {
-        elevatorMotorRunning = true;
-    }
-    
-    // stop it once the spacing switch is pressed
-    //spacingSwitch.periodic();
-    if (spacingSwitch.get()) {
-      elevatorMotorRunning = false;
-    }
-
-    elevatorMotor.set(elevatorMotorRunning || stick.getRawButton(1) ? 1 : 0);
+    elevatorMotor.set(elevatorMotorRunning ? 1 : 0);
 
     // start elevator/dump moto
-    if (stick.getRawButtonPressed(5) && !elevatorMotorRunning) {
+    if (stick.getRawButtonPressed(1) ) {
       elevatorStart = Timer.getFPGATimestamp();
+      balls = 0;
     }
 
     // trigger activates elevator/dump motor for X seconds at Y speed
     // TODO: parametrize these two values
     // Button 1 is the main trigger
-    if (stick.getRawButtonPressed(1)) {
-      elevatorStart = Timer.getFPGATimestamp();
-      elevatorEnd = elevatorStart + .65 * 1.2; // run the elevator for this many seconds
-    }
+    int proximity = colorSensor.getProximity();
 
-    if (Timer.getFPGATimestamp() < elevatorEnd) {
+    SmartDashboard.putNumber("Proximity", proximity);
+    boolean proximityState = proximity > intakeThreshold;
+    if (!lastProximityState && proximityState) {
+      balls++;
+    }
+    if (proximityState && balls != 4) {
+      elevatorIntaking = true;
+    }
+    lastProximityState = proximityState;
+    // stop when spacing switch is pressed
+        
+    spacingSwitch.periodic();
+    if (spacingSwitch.pressed()) {
+      elevatorIntakingDelayStart = Timer.getFPGATimestamp();
+    }
+    SmartDashboard.putNumber("Balls", balls);
+    double scaledIntakingDelay = elevatorIntakingDelay * (12 / RobotController.getBatteryVoltage());
+    if (elevatorIntakingDelayStart != 0 && elevatorIntakingDelayStart + scaledIntakingDelay < Timer.getFPGATimestamp()) {
+      elevatorIntaking = false;
+      elevatorIntakingDelayStart = 0;
+    }
+    // stop intake on press
+    if (stick.getRawButtonPressed(3)) {
+      elevatorIntaking = false;
+    }
+    if (Timer.getFPGATimestamp() < elevatorEnd || elevatorIntaking) {
       elevatorMotor.set(1);
       intakeMotor.set(0);
     } else {
       elevatorMotor.set(0);
     }
-
   }
   
   @Override
