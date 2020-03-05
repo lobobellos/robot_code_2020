@@ -99,26 +99,7 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
 
-    // Drive with arcade drive.
-    // That means that the Y axis drives forward
-    // and backward, and the X turns left and right.
-
-    // read throttle to compute speed modification
-    Double speed = (-stick.getThrottle() + 1) / 2;
-    speed = (speed * 0.5) + 0.5;
-    // System.out.println(speed); // debug
-
-    // apply speed modification based on throttle
-    double driveSpeed = stick.getY() * speed;
-    double driveRotation = stick.getX() * speed;
-
-    // invert direction based on current configuration
-    if (direction == 1) {
-      driveSpeed = -driveSpeed;
-    }
-
-    // instantaneous propulsion is based on the computed speed and rotation
-    robotDrive.arcadeDrive(driveSpeed, driveRotation);
+    drivecontrol();
 
     // toggle intake motor state based on button press
     if (stick.getRawButtonPressed(7)) {
@@ -215,6 +196,31 @@ public class Robot extends TimedRobot {
     intakeState = false;
     elevatorIntaking = false;
     elevatorEnd = 0;
+  }
+
+  private void drivecontrol() {
+
+    // Drive with arcade drive.
+    // That means that the Y axis drives forward
+    // and backward, and the X turns left and right.
+
+    // read throttle to compute speed modification
+    Double speed = (-stick.getThrottle() + 1) / 2;
+    speed = (speed * 0.5) + 0.5;
+    // System.out.println(speed); // debug
+
+    // apply speed modification based on throttle
+    double driveSpeed = stick.getY() * speed;
+    double driveRotation = stick.getX() * speed;
+
+    // invert direction based on current configuration
+    if (direction == 1) {
+      driveSpeed = -driveSpeed;
+    }
+
+    // instantaneous propulsion is based on the computed speed and rotation
+    robotDrive.arcadeDrive(driveSpeed, driveRotation);
+
   }
   
   @Override
