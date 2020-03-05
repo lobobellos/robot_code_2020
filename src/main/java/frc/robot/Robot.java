@@ -303,4 +303,18 @@ public class Robot extends TimedRobot {
     }
   
   }
+
+  // Option 3: Just drive off the line
+  private void autonomous3() {
+
+    double elapsedTime = Timer.getFPGATimestamp() - autonomousStart;
+    int state;
+    if (elapsedTime < 2) {
+      robotDrive.arcadeDrive(1, 0);
+    } else {
+      robotDrive.arcadeDrive(0, 0);
+    }
+    
+  }
+
 }
