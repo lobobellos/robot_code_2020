@@ -69,7 +69,7 @@ public class Robot extends TimedRobot {
 
   private int INTAKETHRESHOLD = 300; // proximity sensor reading that triggers intake
   private boolean lastProximityState = false;
-  private double elevatorIntakingDelay = 0.1;
+  private double ELEVATOR_INTAKE_DELAY = 0.1; // 0.1 seems like a good value for 4-ball spacing
   private double elevatorIntakingDelayStart = 0;
   private int balls = 0;
 
@@ -163,7 +163,7 @@ public class Robot extends TimedRobot {
     }
 
     SmartDashboard.putNumber("Balls", balls);
-    double scaledIntakingDelay = elevatorIntakingDelay * (12 / RobotController.getBatteryVoltage());
+    double scaledIntakingDelay = ELEVATOR_INTAKE_DELAY * (12 / RobotController.getBatteryVoltage());
     if (elevatorIntakingDelayStart != 0 && elevatorIntakingDelayStart + scaledIntakingDelay < Timer.getFPGATimestamp()) {
       elevatorIntaking = false;
       elevatorIntakingDelayStart = 0;
