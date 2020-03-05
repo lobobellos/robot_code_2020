@@ -75,6 +75,9 @@ public class Robot extends TimedRobot {
   private double elevatorIntakingDelayStart = 0;
   private int balls = 0;
 
+  private final int MAX_BALLS = 4;
+  private final double INTAKE_SPEED = 0.8;
+  private final double ELEVATOR_SPEED = 1.0;
 
   @Override
   // when the robot boots up, configure the cameras and create the switches
@@ -123,9 +126,8 @@ public class Robot extends TimedRobot {
     }
 
     // set the speed of intake motor to X if it should be on, else 0
-    // TODO: parametrize this as a class constant
-    if (intakeState && balls != 4) {
-      intakeMotor.set(0.8);
+    if (intakeState && balls != MAX_BALLS) {
+      intakeMotor.set(INTAKE_SPEED);
     } else {
       intakeMotor.set(0);
     }
@@ -151,7 +153,7 @@ public class Robot extends TimedRobot {
 
     elevatorMotor.set(elevatorMotorRunning ? 1 : 0);
 
-    // start elevator/dump moto
+    // start elevator/dump motor
     if (stick.getRawButtonPressed(1) ) {
       elevatorStart = Timer.getFPGATimestamp();
       balls = 0;
@@ -167,7 +169,7 @@ public class Robot extends TimedRobot {
     if (!lastProximityState && proximityState) {
       balls++;
     }
-    if (proximityState && balls != 4) {
+    if (proximityState && balls != MAX_BALLS) {
       elevatorIntaking = true;
     }
     lastProximityState = proximityState;
@@ -183,16 +185,19 @@ public class Robot extends TimedRobot {
       elevatorIntaking = false;
       elevatorIntakingDelayStart = 0;
     }
+
     // stop intake on press
     if (stick.getRawButtonPressed(3)) {
       elevatorIntaking = false;
     }
+
     if (Timer.getFPGATimestamp() < elevatorEnd || elevatorIntaking) {
-      elevatorMotor.set(1);
+      elevatorMotor.set(ELEVATOR_SPEED);
       intakeMotor.set(0);
     } else {
       elevatorMotor.set(0);
     }
+
   }
   
   @Override
