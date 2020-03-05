@@ -67,14 +67,14 @@ public class Robot extends TimedRobot {
   private double elevatorEnd = -1; // when the elevator should stop running
   private double autonomousStart; // when autonomous mode starts
 
-  private int INTAKETHRESHOLD = 1000; // proximity sensor reading that triggers intake
+  private int INTAKETHRESHOLD = 450; // proximity sensor reading that triggers intake
   private boolean lastProximityState = false;
-  private double elevatorIntakingDelay = 1;
+  private double elevatorIntakingDelay = 0.1;
   private double elevatorIntakingDelayStart = 0;
   private int balls = 0;
 
   private final int MAX_BALLS = 4;
-  private final double INTAKE_SPEED = 0.8;
+  private final double INTAKE_SPEED = 0.7;
   private final double ELEVATOR_SPEED = 1.0;
 
   private int automode;
@@ -152,17 +152,11 @@ public class Robot extends TimedRobot {
     double elevatorMotorTime = 8 * (12 / RobotController.getBatteryVoltage());
     boolean elevatorMotorRunning = elevatorIntaking || Timer.getFPGATimestamp() < elevatorStart + elevatorMotorTime;
 
-     // start elevator/dump motor
-     if (stick.getRawButtonPressed(1) ) {
-      elevatorMotorRunning = true;
-      balls = 0;
-    }
-
-    if (elevatorMotorRunning) {
+    /*if (elevatorMotorRunning) {
       elevatorMotor.set(ELEVATOR_SPEED);
     } else {
       elevatorMotor.set(0);
-    }
+    }*/
 
     // trigger activates elevator/dump motor for X seconds at Y speed
     // TODO: parametrize these two values
@@ -174,9 +168,11 @@ public class Robot extends TimedRobot {
     if (!lastProximityState && proximityState) {
       balls++;
     }
+
     if (proximityState && balls != MAX_BALLS) {
       elevatorIntaking = true;
     }
+
     lastProximityState = proximityState;
     // stop when spacing switch is pressed
         
@@ -184,6 +180,7 @@ public class Robot extends TimedRobot {
     if (spacingSwitch.pressed()) {
       elevatorIntakingDelayStart = Timer.getFPGATimestamp();
     }
+
     SmartDashboard.putNumber("Balls", balls);
     double scaledIntakingDelay = elevatorIntakingDelay * (12 / RobotController.getBatteryVoltage());
     if (elevatorIntakingDelayStart != 0 && elevatorIntakingDelayStart + scaledIntakingDelay < Timer.getFPGATimestamp()) {
@@ -196,7 +193,12 @@ public class Robot extends TimedRobot {
       elevatorIntaking = false;
     }
 
-    if (Timer.getFPGATimestamp() < elevatorEnd || elevatorIntaking) {
+    // start elevator/dump motor
+    if (stick.getRawButton(1)) {
+      balls = 0;
+    }
+
+    if (Timer.getFPGATimestamp() < elevatorEnd || elevatorIntaking || stick.getRawButton(1)) {
       elevatorMotor.set(ELEVATOR_SPEED);
       intakeMotor.set(0);
     } else {
