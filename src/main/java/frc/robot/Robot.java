@@ -188,7 +188,7 @@ public class Robot extends TimedRobot {
       elevatorIntakingDelayStart = 0;
     }
 
-    // stop intake on press
+    // stop intake on press TODO: what does this do, exactly?
     if (stick.getRawButtonPressed(3)) {
       elevatorIntaking = false;
     }
@@ -205,6 +205,16 @@ public class Robot extends TimedRobot {
       elevatorMotor.set(0);
     }
 
+    if(stick.getRawButtonPressed(8)) {
+      reset();
+    }
+  }
+
+  private void reset() {
+    balls = 0;
+    intakeState = false;
+    elevatorIntaking = false;
+    elevatorEnd = 0;
   }
   
   @Override
