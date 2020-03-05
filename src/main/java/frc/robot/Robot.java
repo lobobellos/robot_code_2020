@@ -270,38 +270,30 @@ public class Robot extends TimedRobot {
   
   }
 
+  // Option 2: Start offset to left side. (TODO: take measurements)
+  // proceed, turn to align, move forward, purge
   private void autonomous2() {
   
     double elapsedTime = Timer.getFPGATimestamp() - autonomousStart;
     int state;
     
     if (elapsedTime < 2) {
-      state = 1; // drive forward first
-    } else if (elapsedTime < 3) {
-      state = 2; // Turn 
-    } else if (elapsedTime < 4) {
-      state = 3; // go foward again
-    } else if (elapsedTime < 7) {
-     state = 4; // purging the pipeline
-    } else {
-      state = 0;
-    }
-
-
-    if (state == 1 || state == 3) {
       robotDrive.arcadeDrive(-0.7, 0);
-    } else if (state == 2) {
+      elevatorMotor.set(0);
+    } else if (elapsedTime < 3) {
       robotDrive.arcadeDrive(0, 1);
-    } else {
+      elevatorMotor.set(0); 
+    } else if (elapsedTime < 4) {
+      robotDrive.arcadeDrive(-0.7, 0);
+      elevatorMotor.set(0);
+    } else if (elapsedTime < 7) {
       robotDrive.arcadeDrive(0, 0);
-    }
-
-    if (state == 4) {
       elevatorMotor.set(ELEVATOR_SPEED);
     } else {
+      robotDrive.arcadeDrive(0, 0);
       elevatorMotor.set(0);
     }
-  
+    
   }
 
   // Option 3: Just drive off the line
