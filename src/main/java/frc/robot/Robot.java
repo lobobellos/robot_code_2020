@@ -150,16 +150,16 @@ public class Robot extends TimedRobot {
     double elevatorMotorTime = 8 * (12 / RobotController.getBatteryVoltage());
     boolean elevatorMotorRunning = elevatorIntaking || Timer.getFPGATimestamp() < elevatorStart + elevatorMotorTime;
 
+     // start elevator/dump motor
+     if (stick.getRawButtonPressed(1) ) {
+      elevatorMotorRunning = true;
+      balls = 0;
+    }
+
     if (elevatorMotorRunning) {
       elevatorMotor.set(ELEVATOR_SPEED);
     } else {
       elevatorMotor.set(0);
-    }
-
-    // start elevator/dump motor
-    if (stick.getRawButtonPressed(1) ) {
-      elevatorStart = Timer.getFPGATimestamp();
-      balls = 0;
     }
 
     // trigger activates elevator/dump motor for X seconds at Y speed
