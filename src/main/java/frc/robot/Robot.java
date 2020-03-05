@@ -147,11 +147,16 @@ public class Robot extends TimedRobot {
           break;
       }
     }
+
     // since a lower battery means a slower motor, we need to scale the time
     double elevatorMotorTime = 8 * (12 / RobotController.getBatteryVoltage());
     boolean elevatorMotorRunning = elevatorIntaking || Timer.getFPGATimestamp() < elevatorStart + elevatorMotorTime;
 
-    elevatorMotor.set(elevatorMotorRunning ? 1 : 0);
+    if (elevatorMotorRunning) {
+      elevatorMotor.set(ELEVATOR_SPEED);
+    } else {
+      elevatorMotor.set(0);
+    }
 
     // start elevator/dump motor
     if (stick.getRawButtonPressed(1) ) {
