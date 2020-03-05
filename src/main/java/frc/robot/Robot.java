@@ -93,7 +93,7 @@ public class Robot extends TimedRobot {
   // leaving this false is probably the safer bet, though in competition we may want it to be true so that the
   // driver need not remember to activate the intake motor
   public void teleopInit() {
-    intakeState = false;
+    intakeState = true;
   }
 
   @Override
@@ -193,7 +193,7 @@ public class Robot extends TimedRobot {
 
   private void reset() {
     balls = 0;
-    intakeState = false;
+    intakeState = true;
     elevatorIntaking = false;
     elevatorEnd = 0;
   }
