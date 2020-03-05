@@ -66,10 +66,8 @@ public class Robot extends TimedRobot {
   private double elevatorStart; // when the elevator starts running
   private double elevatorEnd = -1; // when the elevator should stop running
   private double autonomousStart; // when autonomous mode starts
-  private double autophase1; // the duration of autonomous phase1
-  private double autophase2; // the duration of autonomous phase2
 
-  private int intakeThreshold = 1000; // proximity sensor reading that triggers intake
+  private int INTAKETHRESHOLD = 1000; // proximity sensor reading that triggers intake
   private boolean lastProximityState = false;
   private double elevatorIntakingDelay = 1;
   private double elevatorIntakingDelayStart = 0;
@@ -170,7 +168,7 @@ public class Robot extends TimedRobot {
     int proximity = colorSensor.getProximity();
 
     SmartDashboard.putNumber("Proximity", proximity);
-    boolean proximityState = proximity > intakeThreshold;
+    boolean proximityState = proximity > INTAKETHRESHOLD;
     if (!lastProximityState && proximityState) {
       balls++;
     }
@@ -212,13 +210,18 @@ public class Robot extends TimedRobot {
 
   @Override
   public void autonomousPeriodic() {
+    autonomous1();
+  }
 
-    double delta = Timer.getFPGATimestamp() - autonomousStart;
+  private void autonomous1() {
+  
+    double elapsedTime = Timer.getFPGATimestamp() - autonomousStart;
     int state;
-    if (delta < 2) {
-      state = 1;
-    } else if (delta < 4) {
-      state = 2;
+    
+    if (elapsedTime < 3) {
+      state = 1; // drive forward first
+    } else if (elapsedTime < 6) {
+      state = 2; // purge pipeline next
     } else {
       state = 0;
     }
@@ -230,10 +233,11 @@ public class Robot extends TimedRobot {
     }
 
     if (state == 2) {
-      elevatorMotor.set(0.5);
+      elevatorMotor.set(ELEVATOR_SPEED);
     } else {
       elevatorMotor.set(0);
     }
-    
+  
   }
+  
 }
