@@ -67,7 +67,7 @@ public class Robot extends TimedRobot {
   private double elevatorEnd = -1; // when the elevator should stop running
   private double autonomousStart; // when autonomous mode starts
 
-  private int INTAKETHRESHOLD = 450; // proximity sensor reading that triggers intake
+  private int INTAKETHRESHOLD = 300; // proximity sensor reading that triggers intake
   private boolean lastProximityState = false;
   private double elevatorIntakingDelay = 0.1;
   private double elevatorIntakingDelayStart = 0;
