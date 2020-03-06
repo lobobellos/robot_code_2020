@@ -141,7 +141,7 @@ public class Robot extends TimedRobot {
 
     // apply speed modification based on throttle and direction
     double driveSpeed = stick.getY() * throttle * direction;
-    double driveRotation = stick.getX() * throttle;
+    double driveRotation = stick.getX() * throttle * 0.5;
 
     // instantaneous propulsion is based on the computed speed and rotation
     robotDrive.arcadeDrive(driveSpeed, driveRotation);
