@@ -164,7 +164,7 @@ public class Robot extends TimedRobot {
 
     // toggle enable/disable of elevator motor
     if (stick.getRawButtonPressed(9)) {
-      elevatorEnabled = !elevatorEnabled;
+      manualElevatorEnabled = !manualElevatorEnabled;
     }
 
     // press and hold override button (trigger) to force elevator
