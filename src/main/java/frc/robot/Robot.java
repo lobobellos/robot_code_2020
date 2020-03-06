@@ -46,9 +46,9 @@ public class Robot extends TimedRobot {
 
   // this variable tracks which end of the robot is currently defined as the "front" of the robot for
   // purposes of steering and camera
-  // 0 = intake end is front
-  // 1 = output is front
-  private int direction = 0;
+  // 1 = intake end is front
+  // -1 = output is front
+  private int direction = 1;
 
   // switches on intake/elevator
   // private final DigitalInputManager captureSwitch = new DigitalInputManager(4);
@@ -122,15 +122,11 @@ public class Robot extends TimedRobot {
     // Button 2 is the right thumb trigger
     // TODO: figure out how to get these cameras displayed on the smart dashboard
     if (stick.getRawButtonPressed(2)) {
-      switch (direction) {
-        case 0:
-          direction = 1;
-          cameraServer.setSource(backCamera);
-          break;
-        case 1:
-          direction = 0;
-          cameraServer.setSource(frontCamera);
-          break;
+      direction = -direction; // reverse between 1 and -1
+      if (direction == -1) {
+        cameraServer.setSource(backCamera);
+      } else {
+        cameraServer.setSource(frontCamera);
       }
     }
 
@@ -186,6 +182,7 @@ public class Robot extends TimedRobot {
 
     // update display
     // TODO: format display in smart dashboard
+    // TODO: display throttle and speed
     SmartDashboard.putNumber("Proximity", proximity);
     SmartDashboard.putNumber("Balls", balls);
 
@@ -210,18 +207,14 @@ public class Robot extends TimedRobot {
     // and backward, and the X turns left and right.
 
     // read throttle to compute speed modification
-    Double speed = (-stick.getThrottle() + 1) / 2;
-    speed = (speed * 0.5) + 0.5;
+    // linearly maps value from 1 to -1 into a value that is 0.5 to 1
+    Double throttle = (-stick.getThrottle() + 1) / 2;
+    throttle = throttle * 0.5 + 0.5;
     // System.out.println(speed); // debug
 
-    // apply speed modification based on throttle
-    double driveSpeed = stick.getY() * speed;
-    double driveRotation = stick.getX() * speed;
-
-    // invert direction based on current configuration
-    if (direction == 1) {
-      driveSpeed = -driveSpeed;
-    }
+    // apply speed modification based on throttle and direction
+    double driveSpeed = stick.getY() * throttle * direction;
+    double driveRotation = stick.getX() * throttle;
 
     // instantaneous propulsion is based on the computed speed and rotation
     robotDrive.arcadeDrive(driveSpeed, driveRotation);
