@@ -316,7 +316,8 @@ public class Robot extends TimedRobot {
   
     double DELAY = 0; // could optionally add a delay if we need to wait for another robot to evacuate bottom port
     double elapsedTime = Timer.getFPGATimestamp() - autonomousStart - DELAY;
-    
+    intakeMotor.set(0); // unused in this mode
+
     if (elapsedTime < 3.5) { // drive forward
       robotDrive.arcadeDrive(-0.7, 0);
       elevatorMotor.set(0);
@@ -336,6 +337,7 @@ public class Robot extends TimedRobot {
   private void autonomous2() {
   
     double elapsedTime = Timer.getFPGATimestamp() - autonomousStart;
+    intakeMotor.set(0); // unused in this mode
     
     if (elapsedTime < 2) { // move forward
       robotDrive.arcadeDrive(-0.7, 0);
@@ -362,6 +364,7 @@ public class Robot extends TimedRobot {
   private void autonomous3() {
 
     double elapsedTime = Timer.getFPGATimestamp() - autonomousStart;
+    elevatorMotor.set(0); // unused
     
     if (elapsedTime < 3) { // move backwards
       robotDrive.arcadeDrive(0.7, 0);
