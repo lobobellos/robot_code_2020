@@ -110,7 +110,7 @@ public class Robot extends TimedRobot {
       intakeState = !intakeState;
     }
 
-    // set the speed of intake motor to X if it should be on, else 0
+    // run the intake motor unless it's been disabled or the pipeline is full
     if (intakeState && balls != MAX_BALLS) {
       intakeMotor.set(INTAKE_SPEED);
     } else {
@@ -120,6 +120,7 @@ public class Robot extends TimedRobot {
     // based on a button press, invert the definition of the "front" of the robot
     // mainly involves inverting controls and which camera is used
     // Button 2 is the right thumb trigger
+    // TODO: figure out how to get these cameras displayed on the smart dashboard
     if (stick.getRawButtonPressed(2)) {
       switch (direction) {
         case 0:
@@ -137,27 +138,29 @@ public class Robot extends TimedRobot {
     double elevatorMotorTime = 8 * (12 / RobotController.getBatteryVoltage());
     boolean elevatorMotorRunning = elevatorIntaking || Timer.getFPGATimestamp() < elevatorStart + elevatorMotorTime;
 
+    // read proximity sensor and check if it meets criteria for power cell detection
     int proximity = colorSensor.getProximity();
-
-    SmartDashboard.putNumber("Proximity", proximity);
     boolean proximityState = proximity > INTAKETHRESHOLD;
+
+    // if we changed proximity states, it means a power cell appeared
     if (!lastProximityState && proximityState) {
       balls++;
     }
 
+    // keep a record to detect transitions
+    lastProximityState = proximityState;
+
+    // if there's a power cell at the intake, and we're not full, advance the pipeline
     if (proximityState && balls != MAX_BALLS) {
       elevatorIntaking = true;
     }
 
-    lastProximityState = proximityState;
-    // stop when spacing switch is pressed
-        
-    spacingSwitch.periodic();
-    if (spacingSwitch.pressed()) {
+    // stop when spacing switch is pressed    
+    spacingSwitch.periodic(); // reads in new state
+    if (spacingSwitch.pressed()) { // checks if state has changed
       elevatorIntakingDelayStart = Timer.getFPGATimestamp();
     }
 
-    SmartDashboard.putNumber("Balls", balls);
     double scaledIntakingDelay = ELEVATOR_INTAKE_DELAY * (12 / RobotController.getBatteryVoltage());
     if (elevatorIntakingDelayStart != 0 && elevatorIntakingDelayStart + scaledIntakingDelay < Timer.getFPGATimestamp()) {
       elevatorIntaking = false;
@@ -174,7 +177,6 @@ public class Robot extends TimedRobot {
       balls = 0;
     }
 
-    
     if (Timer.getFPGATimestamp() < elevatorEnd || elevatorIntaking || stick.getRawButton(1)) {
       elevatorMotor.set(ELEVATOR_SPEED);
       intakeMotor.set(0);
@@ -182,7 +184,13 @@ public class Robot extends TimedRobot {
       elevatorMotor.set(0);
     }
 
-    // failsafe reinitialize robot
+    // update display
+    // TODO: format display in smart dashboard
+    SmartDashboard.putNumber("Proximity", proximity);
+    SmartDashboard.putNumber("Balls", balls);
+
+    // failsafe: reinitialize robot
+    // button 8 is top left inner button on base
     if(stick.getRawButtonPressed(8)) {
       reset();
     }
