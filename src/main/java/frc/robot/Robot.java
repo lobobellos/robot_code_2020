@@ -201,7 +201,7 @@ public class Robot extends TimedRobot {
 
     // failsafe: reinitialize robot
     // button 11 is bottom left outter button on base
-    if(stick.getRawButtonPressed(11)) {
+    if(stick.getRawButtonPressed(12)) {
       reset();
     }
 
