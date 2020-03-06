@@ -172,6 +172,11 @@ public class Robot extends TimedRobot {
       nPowerCells = 0;
     }
 
+    // after purging, restart the intake
+    if (stick.getRawButtonReleased(1)) {
+      intakeEnabled = true;
+    }
+
     // manually terminate pulse operation e.g. if switch fails to detect
     if (stick.getRawButtonPressed(11)) {
       elevatorEnabled = false;
