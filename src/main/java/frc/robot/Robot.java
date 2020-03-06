@@ -47,6 +47,7 @@ public class Robot extends TimedRobot {
   private boolean lastProximityState = false;
   
   DigitalInputManager spacingSwitch;
+  private Boolean spacingSwitchActivated = false;
 
   private VideoSink cameraServer;
   private UsbCamera frontCamera;
@@ -227,6 +228,7 @@ public class Robot extends TimedRobot {
     if (proximityState && nPowerCells != MAX_POWER_CELLS) {
       elevatorEnabled = true;
       intakeEnabled = false;
+      spacingSwitchActivated = false;
     }
 
     // check it it's time to end an active elevator pulse
@@ -236,13 +238,14 @@ public class Robot extends TimedRobot {
       spacingSwitch.periodic(); // update switch state
       if (spacingSwitch.pressed()) { // if the state has changed to a press...
         spacingSwitchTime = Timer.getFPGATimestamp();
+        spacingSwitchActivated = true;
       }
 
       // determine any additional time that should be added after switch is pressed
       // scaled based on instantaneous battery voltage (could be a bit noisy)
       double pulseElongation = ELEVATOR_INTAKE_DELAY * (12 / RobotController.getBatteryVoltage());
 
-      if (Timer.getFPGATimestamp() >= spacingSwitchTime + pulseElongation) {
+      if (spacingSwitchActivated && Timer.getFPGATimestamp() >= spacingSwitchTime + pulseElongation) {
         elevatorEnabled = false;
         intakeEnabled = true;
       }
