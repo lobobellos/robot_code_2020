@@ -56,10 +56,11 @@ public class Robot extends TimedRobot {
 
   // ROBOT STATE
 
-  // these variables track whether or not the intake motor should be running
+  // these variables track whether or not the intake motor should be running, and how fast
   private Boolean intakeEnabled = true; // allows softare control
   private Boolean manualIntakeEnabled = true; // allows manual disable
   private Boolean manualIntakeOverride = false; // allows manual force operation
+  private double intakeSpeed;
 
   // these variables track whether or not the elevator motor should be running
   private Boolean elevatorEnabled = false; // does software grant permission?
@@ -83,11 +84,12 @@ public class Robot extends TimedRobot {
 
   // TUNABLE PARAMETERS
   private int INTAKETHRESHOLD = 300; // proximity sensor reading that triggers intak
-  private double ELEVATOR_INTAKE_DELAY = 0.1; // delay after spacing switch activation; 0.1 seems like a good value for 4 power cells
+  private double ELEVATOR_INTAKE_DELAY = 0.07; // delay after spacing switch activation; 0.07 seems like a good value for 4 power cells
   private final int MAX_POWER_CELLS = 4; // number of power cells before intake stops
-  private final double INTAKE_SPEED = 0.7; // speed of intake motor
+  private final double INTAKE_COLLECTION_SPEED = 0.8; // speed of intake motor
+  private final double INTAKE_HOLD_SPEED = 0.4; // keep the motor running a bit when capturing final power cell to make sure it's held in place
   private final double ELEVATOR_SPEED = 1.0; // speed of elevator
-  private final double ROTATION_SCALE = 0.5; // scale factor 0 to 1 to make turns easier to control, but not too slow
+  private final double ROTATION_SCALE = 1.0; // scale factor 0 to 1 to make turns easier to control, but not too slow
 
   // select which version of autonomous code to use
   // TODO: make switchable in hardware?
@@ -112,10 +114,14 @@ public class Robot extends TimedRobot {
     intakeEnabled = true;
     manualIntakeEnabled = true;
     manualIntakeOverride = false;
+    intakeSpeed = INTAKE_COLLECTION_SPEED;
 
     elevatorEnabled = false;
     manualElevatorEnabled = true;
     manualElevatorOverride = false;
+
+    nPowerCells = 0;
+
   }
 
   @Override
@@ -168,17 +174,16 @@ public class Robot extends TimedRobot {
     }
 
     // press and hold override button (trigger) to force elevator
-    // reset power cell count when you do this, assuming pipeline is purged
     if (stick.getRawButton(1)) {
       manualElevatorOverride = true;
       elevatorEnabled = false; // terminate any pulse in progress
-      nPowerCells = 0;
     }
 
-    // after purging, restart the intake
+    // after purging, restart the intake and assume the pipeline has been purged
     if (stick.getRawButtonReleased(1)) {
       manualElevatorOverride = false;
-      intakeEnabled = true; // back to intaking after purge
+      intakeSpeed = INTAKE_COLLECTION_SPEED;
+      nPowerCells = 0;
     }
 
     // manually terminate pulse operation e.g. if switch fails to detect
@@ -214,10 +219,13 @@ public class Robot extends TimedRobot {
     boolean proximityState = proximity > INTAKETHRESHOLD;
 
     // if we changed proximity states, it means a power cell appeared
-    if (!lastProximityState && proximityState) {
+    // except if the elevator is already running, in which case it's a false double reading due to bounce
+    // we can tell if it's infeasible for a new ball to show up if the elevator is already running as part of a pulse
+    // or if we are already theoreticall at capacity
+    if (!lastProximityState && proximityState && !elevatorEnabled && nPowerCells != MAX_POWER_CELLS) {
       nPowerCells++;
       if (nPowerCells == MAX_POWER_CELLS) {
-        intakeEnabled = false;
+        intakeSpeed = INTAKE_HOLD_SPEED;
       }
     }
 
@@ -227,7 +235,7 @@ public class Robot extends TimedRobot {
     // if there's a power cell at the intake, and we're not full, pulse the pipeline
     if (proximityState && nPowerCells != MAX_POWER_CELLS) {
       elevatorEnabled = true;
-      intakeEnabled = false;
+      intakeSpeed = INTAKE_HOLD_SPEED;
       spacingSwitchActivated = false;
     }
 
@@ -247,7 +255,7 @@ public class Robot extends TimedRobot {
 
       if (spacingSwitchActivated && Timer.getFPGATimestamp() >= spacingSwitchTime + pulseElongation) {
         elevatorEnabled = false;
-        intakeEnabled = true;
+        intakeSpeed = INTAKE_COLLECTION_SPEED;
       }
 
     }
@@ -265,7 +273,7 @@ public class Robot extends TimedRobot {
 
     // run the intake motor if human and software grant permission, or if human forces operation
     if (manualIntakeEnabled && intakeEnabled || manualIntakeOverride) {
-      intakeMotor.set(INTAKE_SPEED);
+      intakeMotor.set(intakeSpeed);
     } else {
       intakeMotor.set(0);
     }
@@ -277,6 +285,8 @@ public class Robot extends TimedRobot {
     // TODO: format display in smart dashboard
     // TODO: display throttle and speed
     // TODO: display enable/disable and override for mechanisms
+    // TODO: why are these displaying unreliably?
+    // TODO: display motor speeds
     SmartDashboard.putNumber("Proximity", proximity);
     SmartDashboard.putNumber("Power Cells", nPowerCells);
   }
@@ -288,10 +298,13 @@ public class Robot extends TimedRobot {
     intakeEnabled = true;
     manualIntakeEnabled = true;
     manualIntakeOverride = false;
+    intakeSpeed = INTAKE_COLLECTION_SPEED;
 
     elevatorEnabled = false;
     manualElevatorEnabled = true;
     manualElevatorOverride = false;
+
+    nPowerCells = 0;
   }
 
   @Override
@@ -368,7 +381,7 @@ public class Robot extends TimedRobot {
     
     if (elapsedTime < 3) { // move backwards
       robotDrive.arcadeDrive(0.7, 0);
-      intakeMotor.set(INTAKE_SPEED);
+      intakeMotor.set(INTAKE_COLLECTION_SPEED);
     } else { // wait
       robotDrive.arcadeDrive(0, 0);
       intakeMotor.set(0);
