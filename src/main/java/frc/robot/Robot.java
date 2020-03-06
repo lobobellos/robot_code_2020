@@ -82,7 +82,7 @@ public class Robot extends TimedRobot {
 
   // TUNABLE PARAMETERS
   private int INTAKETHRESHOLD = 300; // proximity sensor reading that triggers intak
-  private double ELEVATOR_INTAKE_DELAY = 0.1; // delay after spacing switch activation; 0.1 seems like a good value for 4-ball spacing
+  private double ELEVATOR_INTAKE_DELAY = 0.1; // delay after spacing switch activation; 0.1 seems like a good value for 4 power cells
   private final int MAX_POWER_CELLS = 4; // number of power cells before intake stops
   private final double INTAKE_SPEED = 0.7; // speed of intake motor
   private final double ELEVATOR_SPEED = 1.0; // speed of elevator
@@ -166,7 +166,7 @@ public class Robot extends TimedRobot {
     }
 
     // press and hold override button (trigger) to force elevator
-    // reset ball count when you do this, assuming pipeline is purged
+    // reset power cell count when you do this, assuming pipeline is purged
     if (stick.getRawButton(1)) {
       manualElevatorOverride = true;
       nPowerCells = 0;
@@ -346,7 +346,7 @@ public class Robot extends TimedRobot {
   }
 
   // Option 3: Just drive off the line if we're completely boxed out of lower port
-  // ideally at least capture a fourth ball
+  // ideally at least capture a fourth power cell
   // TODO: calibrate parameters
   private void autonomous3() {
 
