@@ -25,6 +25,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Robot extends TimedRobot {
 
+  // drive motors and controls
   private final Spark leftMotorRear = new Spark(0);
   private final Spark leftMotorFront = new Spark(1);
   private final SpeedControllerGroup leftMotors = new SpeedControllerGroup(leftMotorRear, leftMotorFront);
@@ -39,7 +40,18 @@ public class Robot extends TimedRobot {
   private final Spark intakeMotor = new Spark(8);
   private final Spark elevatorMotor = new Spark(9);
 
+  // sensors
   private final ColorSensorV3 colorSensor = new ColorSensorV3(I2C.Port.kOnboard);
+  int proximity;
+  private boolean lastProximityState = false;
+
+  DigitalInputManager spacingSwitch;
+
+  private VideoSink cameraServer;
+  private UsbCamera frontCamera;
+  private UsbCamera backCamera;
+  
+  // mechanism state
 
   // these variables track whether or not the intake motor should be running
   private Boolean intakeEnabled = true; // allows softare control
@@ -51,30 +63,24 @@ public class Robot extends TimedRobot {
   private Boolean manualElevatorEnabled = true; // does human grant permission?
   private Boolean manualElevatorOverride = false; // allows manual force operation
 
+  private int balls = 0;
+
   // this variable tracks which end of the robot is currently defined as the "front" of the robot for
   // purposes of steering and camera
   // 1 = intake end is front
   // -1 = output is front
   private int direction = 1;
 
-  DigitalInputManager spacingSwitch;
-
-  private VideoSink cameraServer;
-  private UsbCamera frontCamera;
-  private UsbCamera backCamera;
-  
   // these variables are timers that track...
   private double spacingSwitchTime; // when the spacing switch was pressed during a pulse
   private double autonomousStart; // when autonomous mode starts
 
-  private int INTAKETHRESHOLD = 300; // proximity sensor reading that triggers intake
-  private boolean lastProximityState = false;
-  private double ELEVATOR_INTAKE_DELAY = 0.1; // 0.1 seems like a good value for 4-ball spacing
-  private int balls = 0;
-
-  private final int MAX_BALLS = 4;
-  private final double INTAKE_SPEED = 0.7;
-  private final double ELEVATOR_SPEED = 1.0;
+  // tunable parameters
+  private int INTAKETHRESHOLD = 300; // proximity sensor reading that triggers intak
+  private double ELEVATOR_INTAKE_DELAY = 0.1; // delay after spacing switch activation; 0.1 seems like a good value for 4-ball spacing
+  private final int MAX_BALLS = 4; // number of balls before intake stops
+  private final double INTAKE_SPEED = 0.7; // speed of intake motor
+  private final double ELEVATOR_SPEED = 1.0; // speed of elevator
 
   // select which version of autonomous code to use
   // TODO: make switchable in hardware?
@@ -108,7 +114,48 @@ public class Robot extends TimedRobot {
   public void teleopPeriodic() {
 
     drivecontrol();
+    handleManualInputs();
+    handleSensorInputs();
+    actuateMechanisms();
+    updateDisplay();
+    // TODO: data logging?
+  }
 
+  private void reset() {
+    balls = 0;
+
+    intakeEnabled = true;
+    manualIntakeEnabled = true;
+    manualIntakeOverride = false;
+
+    elevatorEnabled = false;
+    manualElevatorEnabled = true;
+    manualElevatorOverride = false;
+  }
+
+  private void drivecontrol() {
+
+    // Drive with arcade drive.
+    // That means that the Y axis drives forward
+    // and backward, and the X turns left and right.
+
+    // read throttle to compute speed modification
+    // linearly maps value from 1 to -1 into a value that is 0.5 to 1
+    Double throttle = (-stick.getThrottle() + 1) / 2;
+    throttle = throttle * 0.5 + 0.5;
+    // System.out.println(speed); // debug
+
+    // apply speed modification based on throttle and direction
+    double driveSpeed = stick.getY() * throttle * direction;
+    double driveRotation = stick.getX() * throttle;
+
+    // instantaneous propulsion is based on the computed speed and rotation
+    robotDrive.arcadeDrive(driveSpeed, driveRotation);
+
+  }
+  
+  private void handleManualInputs() {
+    
     // toggle enable/disable of intake motor
     // button 7 is top left outer on the base
     if (stick.getRawButtonPressed(7)) {
@@ -148,6 +195,16 @@ public class Robot extends TimedRobot {
         cameraServer.setSource(frontCamera);
       }
     }
+
+    // failsafe: reinitialize robot
+    // button 11 is bottom left outter button on base
+    if(stick.getRawButtonPressed(11)) {
+      reset();
+    }
+
+  }
+
+  private void handleSensorInputs() {
 
     // read proximity sensor and check if it meets criteria for power cell detection
     int proximity = colorSensor.getProximity();
@@ -190,6 +247,10 @@ public class Robot extends TimedRobot {
 
     }
 
+  }
+
+  private void actuateMechanisms() {
+
     // run the elevator motor if human and software grant permission, or if human forces operation
     if (manualElevatorEnabled && elevatorEnabled || manualElevatorOverride) {
       elevatorMotor.set(ELEVATOR_SPEED);
@@ -203,55 +264,18 @@ public class Robot extends TimedRobot {
     } else {
       intakeMotor.set(0);
     }
-    
-    // update display
+
+  }
+
+  // update info displayed on dashboard
+  private void updateDisplay() {
     // TODO: format display in smart dashboard
     // TODO: display throttle and speed
+    // TODO: display enable/disable and override for mechanisms
     SmartDashboard.putNumber("Proximity", proximity);
     SmartDashboard.putNumber("Balls", balls);
-
-    // failsafe: reinitialize robot
-    // button 11 is bottom right outter button on base
-    if(stick.getRawButtonPressed(11)) {
-      reset();
-    }
-
-    // TODO: data logging?
   }
 
-  private void reset() {
-    balls = 0;
-
-    intakeEnabled = true;
-    manualIntakeEnabled = true;
-    manualIntakeOverride = false;
-
-    elevatorEnabled = false;
-    manualElevatorEnabled = true;
-    manualElevatorOverride = false;
-  }
-
-  private void drivecontrol() {
-
-    // Drive with arcade drive.
-    // That means that the Y axis drives forward
-    // and backward, and the X turns left and right.
-
-    // read throttle to compute speed modification
-    // linearly maps value from 1 to -1 into a value that is 0.5 to 1
-    Double throttle = (-stick.getThrottle() + 1) / 2;
-    throttle = throttle * 0.5 + 0.5;
-    // System.out.println(speed); // debug
-
-    // apply speed modification based on throttle and direction
-    double driveSpeed = stick.getY() * throttle * direction;
-    double driveRotation = stick.getX() * throttle;
-
-    // instantaneous propulsion is based on the computed speed and rotation
-    robotDrive.arcadeDrive(driveSpeed, driveRotation);
-
-  }
-  
   @Override
   public void autonomousInit() {
     autonomousStart = Timer.getFPGATimestamp();
