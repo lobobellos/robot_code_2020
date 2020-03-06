@@ -25,7 +25,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Robot extends TimedRobot {
 
-  // drive motors and controls
+  // DRIVE MOTORS AND CONTROLS
   private final Spark leftMotorRear = new Spark(0);
   private final Spark leftMotorFront = new Spark(1);
   private final SpeedControllerGroup leftMotors = new SpeedControllerGroup(leftMotorRear, leftMotorFront);
@@ -40,18 +40,20 @@ public class Robot extends TimedRobot {
   private final Spark intakeMotor = new Spark(8);
   private final Spark elevatorMotor = new Spark(9);
 
-  // sensors
+
+  // SENSORS AND RELATED STATE
   private final ColorSensorV3 colorSensor = new ColorSensorV3(I2C.Port.kOnboard);
   int proximity;
   private boolean lastProximityState = false;
-
+  
   DigitalInputManager spacingSwitch;
 
   private VideoSink cameraServer;
   private UsbCamera frontCamera;
   private UsbCamera backCamera;
   
-  // mechanism state
+
+  // ROBOT STATE
 
   // these variables track whether or not the intake motor should be running
   private Boolean intakeEnabled = true; // allows softare control
@@ -71,11 +73,14 @@ public class Robot extends TimedRobot {
   // -1 = output is front
   private int direction = 1;
 
+
+  // TIMING
   // these variables are timers that track...
   private double spacingSwitchTime; // when the spacing switch was pressed during a pulse
   private double autonomousStart; // when autonomous mode starts
 
-  // tunable parameters
+
+  // TUNABLE PARAMETERS
   private int INTAKETHRESHOLD = 300; // proximity sensor reading that triggers intak
   private double ELEVATOR_INTAKE_DELAY = 0.1; // delay after spacing switch activation; 0.1 seems like a good value for 4-ball spacing
   private final int MAX_BALLS = 4; // number of balls before intake stops
@@ -85,6 +90,7 @@ public class Robot extends TimedRobot {
   // select which version of autonomous code to use
   // TODO: make switchable in hardware?
   private int AUTOMODE = 1;
+
 
   @Override
   // when the robot boots up, configure the cameras and create the switches
@@ -119,18 +125,6 @@ public class Robot extends TimedRobot {
     actuateMechanisms();
     updateDisplay();
     // TODO: data logging?
-  }
-
-  private void reset() {
-    balls = 0;
-
-    intakeEnabled = true;
-    manualIntakeEnabled = true;
-    manualIntakeOverride = false;
-
-    elevatorEnabled = false;
-    manualElevatorEnabled = true;
-    manualElevatorOverride = false;
   }
 
   private void drivecontrol() {
@@ -276,6 +270,19 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Balls", balls);
   }
 
+  // TODO: can't we just call teleop init?
+  private void reset() {
+    balls = 0;
+
+    intakeEnabled = true;
+    manualIntakeEnabled = true;
+    manualIntakeOverride = false;
+
+    elevatorEnabled = false;
+    manualElevatorEnabled = true;
+    manualElevatorOverride = false;
+  }
+  
   @Override
   public void autonomousInit() {
     autonomousStart = Timer.getFPGATimestamp();
