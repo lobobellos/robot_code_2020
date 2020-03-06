@@ -102,6 +102,7 @@ public class Robot extends TimedRobot {
     drivecontrol();
 
     // toggle intake motor state based on button press
+    // button 7 is top left on the base
     if (stick.getRawButtonPressed(7)) {
       intakeState = !intakeState;
     }
@@ -114,7 +115,7 @@ public class Robot extends TimedRobot {
     }
 
     // based on a button press, invert the definition of the "front" of the robot
-    // main involved inverting controls and which camera is used
+    // mainly involves inverting controls and which camera is used
     // Button 2 is the right thumb trigger
     if (stick.getRawButtonPressed(2)) {
       switch (direction) {
@@ -174,11 +175,12 @@ public class Robot extends TimedRobot {
       elevatorIntaking = false;
     }
 
-    // start elevator/dump motor
+    // when trigger is clicked, presume pipeline is flushed
     if (stick.getRawButton(1)) {
       balls = 0;
     }
 
+    
     if (Timer.getFPGATimestamp() < elevatorEnd || elevatorIntaking || stick.getRawButton(1)) {
       elevatorMotor.set(ELEVATOR_SPEED);
       intakeMotor.set(0);
@@ -186,6 +188,7 @@ public class Robot extends TimedRobot {
       elevatorMotor.set(0);
     }
 
+    // failsafe reinitialize robot
     if(stick.getRawButtonPressed(8)) {
       reset();
     }
@@ -240,31 +243,23 @@ public class Robot extends TimedRobot {
       autonomous1();
     } else if (automode == 2) {
       autonomous2();
+    } else if (automode == 3) {
+      autonomous3();
     }
   }
 
   private void autonomous1() {
   
     double elapsedTime = Timer.getFPGATimestamp() - autonomousStart;
-    int state;
     
     if (elapsedTime < 3) {
-      state = 1; // drive forward first
-    } else if (elapsedTime < 6) {
-      state = 2; // purge pipeline next
-    } else {
-      state = 0;
-    }
-
-    if (state == 1) {
       robotDrive.arcadeDrive(-0.7, 0);
+      elevatorMotor.set(0); // drive forward first
+    } else if (elapsedTime < 6) {
+      robotDrive.arcadeDrive(0, 0);
+      elevatorMotor.set(ELEVATOR_SPEED); // purge pipeline next
     } else {
       robotDrive.arcadeDrive(0, 0);
-    }
-
-    if (state == 2) {
-      elevatorMotor.set(ELEVATOR_SPEED);
-    } else {
       elevatorMotor.set(0);
     }
   
@@ -275,7 +270,6 @@ public class Robot extends TimedRobot {
   private void autonomous2() {
   
     double elapsedTime = Timer.getFPGATimestamp() - autonomousStart;
-    int state;
     
     if (elapsedTime < 2) {
       robotDrive.arcadeDrive(-0.7, 0);
@@ -293,14 +287,13 @@ public class Robot extends TimedRobot {
       robotDrive.arcadeDrive(0, 0);
       elevatorMotor.set(0);
     }
-    
+
   }
 
   // Option 3: Just drive off the line
   private void autonomous3() {
 
     double elapsedTime = Timer.getFPGATimestamp() - autonomousStart;
-    int state;
     if (elapsedTime < 2) {
       robotDrive.arcadeDrive(1, 0);
     } else {
