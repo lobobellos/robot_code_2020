@@ -41,22 +41,21 @@ public class Robot extends TimedRobot {
 
   private final ColorSensorV3 colorSensor = new ColorSensorV3(I2C.Port.kOnboard);
 
-  // this variable tracks whether or not the intake motor should be running
-  private Boolean intakeState = true; // allows softare control
-  private Boolean manualIntakeState = true; // allows manual disable
+  // these variables track whether or not the intake motor should be running
+  private Boolean intakeEnabled = true; // allows softare control
+  private Boolean manualIntakeEnabled = true; // allows manual disable
   private Boolean manualIntakeOverride = false; // allows manual force operation
+
+  // these variables track whether or not the elevator motor should be running
+  private Boolean elevatorEnabled = false; // does software grant permission?
+  private Boolean manualElevatorEnabled = true; // does human grant permission?
+  private Boolean manualElevatorOverride = false; // allows manual force operation
 
   // this variable tracks which end of the robot is currently defined as the "front" of the robot for
   // purposes of steering and camera
   // 1 = intake end is front
   // -1 = output is front
   private int direction = 1;
-
-  // switches on intake/elevator
-  // private final DigitalInputManager captureSwitch = new DigitalInputManager(4);
-  // private final DigitalInputManager spacingSwitch = new DigitalInputManager(5);
-
-  private Boolean elevatorIntaking = false; // true after capture switch is hit
 
   DigitalInputManager spacingSwitch;
 
@@ -65,14 +64,12 @@ public class Robot extends TimedRobot {
   private UsbCamera backCamera;
   
   // these variables are timers that track...
-  private double elevatorStart; // when the elevator starts running
-  private double elevatorEnd = -1; // when the elevator should stop running
+  private double spacingSwitchTime; // when the spacing switch was pressed during a pulse
   private double autonomousStart; // when autonomous mode starts
 
   private int INTAKETHRESHOLD = 300; // proximity sensor reading that triggers intake
   private boolean lastProximityState = false;
   private double ELEVATOR_INTAKE_DELAY = 0.1; // 0.1 seems like a good value for 4-ball spacing
-  private double elevatorIntakingDelayStart = 0;
   private int balls = 0;
 
   private final int MAX_BALLS = 4;
@@ -98,9 +95,13 @@ public class Robot extends TimedRobot {
   // leaving this false is probably the safer bet, though in competition we may want it to be true so that the
   // driver need not remember to activate the intake motor
   public void teleopInit() {
-    manualIntakeState = true;
-    intakeState = true;
+    intakeEnabled = true;
+    manualIntakeEnabled = true;
     manualIntakeOverride = false;
+
+    elevatorEnabled = false;
+    manualElevatorEnabled = true;
+    manualElevatorOverride = false;
   }
 
   @Override
@@ -111,13 +112,30 @@ public class Robot extends TimedRobot {
     // toggle enable/disable of intake motor
     // button 7 is top left outer on the base
     if (stick.getRawButtonPressed(7)) {
-      manualIntakeState = !manualIntakeState;
+      manualIntakeEnabled = !manualIntakeEnabled;
     }
 
     // press and hold override button to force intake
     // button 8 is top left inner on base
     manualIntakeOverride = stick.getRawButton(8);
 
+    // toggle enable/disable of elevator motor
+    if (stick.getRawButtonPressed(9)) {
+      elevatorEnabled = !elevatorEnabled;
+    }
+
+    // press and hold override button (trigger) to force elevator
+    // reset ball count when you do this, assuming pipeline is purged
+    if (stick.getRawButton(1)) {
+      manualElevatorOverride = true;
+      balls = 0;
+    }
+
+    // manually terminate pulse operation e.g. if switch fails to detect
+    if (stick.getRawButtonPressed(11)) {
+      elevatorEnabled = false;
+    }
+    
     // based on a button press, invert the definition of the "front" of the robot
     // mainly involves inverting controls and which camera is used
     // Button 2 is the right thumb trigger
@@ -139,54 +157,48 @@ public class Robot extends TimedRobot {
     if (!lastProximityState && proximityState) {
       balls++;
       if (balls == MAX_BALLS) {
-        intakeState = false;
+        intakeEnabled = false;
       }
     }
 
     // keep a record to detect transitions
     lastProximityState = proximityState;
 
-    // if there's a power cell at the intake, and we're not full, advance the pipeline
+    // if there's a power cell at the intake, and we're not full, pulse the pipeline
     if (proximityState && balls != MAX_BALLS) {
-      elevatorIntaking = true;
+      elevatorEnabled = true;
+      intakeEnabled = false;
     }
 
-    // since a lower battery means a slower motor, we need to scale the time
-    double elevatorMotorTime = 8 * (12 / RobotController.getBatteryVoltage());
-    boolean elevatorMotorRunning = elevatorIntaking || Timer.getFPGATimestamp() < elevatorStart + elevatorMotorTime;
+    // check it it's time to end an active elevator pulse
+    if (elevatorEnabled) {
 
-    // stop when spacing switch is pressed    
-    spacingSwitch.periodic(); // reads in new state
-    if (spacingSwitch.pressed()) { // checks if state has changed
-      elevatorIntakingDelayStart = Timer.getFPGATimestamp();
+      // if the spacing switch is pressed, initiate shutdown
+      spacingSwitch.periodic(); // update switch state
+      if (spacingSwitch.pressed()) { // if the state has changed to a press...
+        spacingSwitchTime = Timer.getFPGATimestamp();
+      }
+
+      // determine any additional time that should be added after switch is pressed
+      // scaled based on instantaneous battery voltage (could be a bit noisy)
+      double pulseElongation = ELEVATOR_INTAKE_DELAY * (12 / RobotController.getBatteryVoltage());
+
+      if (Timer.getFPGATimestamp() >= spacingSwitchTime + pulseElongation) {
+        elevatorEnabled = false;
+        intakeEnabled = true;
+      }
+
     }
 
-    double scaledIntakingDelay = ELEVATOR_INTAKE_DELAY * (12 / RobotController.getBatteryVoltage());
-    if (elevatorIntakingDelayStart != 0 && elevatorIntakingDelayStart + scaledIntakingDelay < Timer.getFPGATimestamp()) {
-      elevatorIntaking = false;
-      elevatorIntakingDelayStart = 0;
-    }
-
-    // stop intake on press TODO: what does this do, exactly?
-    if (stick.getRawButtonPressed(3)) {
-      elevatorIntaking = false;
-    }
-
-    // when trigger is clicked, presume pipeline is flushed
-    if (stick.getRawButton(1)) {
-      balls = 0;
-    }
-
-    if (Timer.getFPGATimestamp() < elevatorEnd || elevatorIntaking || stick.getRawButton(1)) {
+    // run the elevator motor if human and software grant permission, or if human forces operation
+    if (manualElevatorEnabled && elevatorEnabled || manualElevatorOverride) {
       elevatorMotor.set(ELEVATOR_SPEED);
-      intakeState = false;
     } else {
       elevatorMotor.set(0);
-      intakeState = true;
     }
 
     // run the intake motor if human and software grant permission, or if human forces operation
-    if (manualIntakeState && intakeState || manualIntakeOverride) {
+    if (manualIntakeEnabled && intakeEnabled || manualIntakeOverride) {
       intakeMotor.set(INTAKE_SPEED);
     } else {
       intakeMotor.set(0);
@@ -209,13 +221,14 @@ public class Robot extends TimedRobot {
 
   private void reset() {
     balls = 0;
-    
-    manualIntakeState = true;
-    intakeState = true;
+
+    intakeEnabled = true;
+    manualIntakeEnabled = true;
     manualIntakeOverride = false;
 
-    elevatorIntaking = false;
-    elevatorEnd = 0;
+    elevatorEnabled = false;
+    manualElevatorEnabled = true;
+    manualElevatorOverride = false;
   }
 
   private void drivecontrol() {
@@ -310,7 +323,7 @@ public class Robot extends TimedRobot {
     
     if (elapsedTime < 3) { // move backwards
       robotDrive.arcadeDrive(0.7, 0);
-      intakeMotor.set(INTAKE_SPEED)
+      intakeMotor.set(INTAKE_SPEED);
     } else { // wait
       robotDrive.arcadeDrive(0, 0);
       intakeMotor.set(0);
