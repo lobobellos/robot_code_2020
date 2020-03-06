@@ -134,15 +134,6 @@ public class Robot extends TimedRobot {
     double elevatorMotorTime = 8 * (12 / RobotController.getBatteryVoltage());
     boolean elevatorMotorRunning = elevatorIntaking || Timer.getFPGATimestamp() < elevatorStart + elevatorMotorTime;
 
-    /*if (elevatorMotorRunning) {
-      elevatorMotor.set(ELEVATOR_SPEED);
-    } else {
-      elevatorMotor.set(0);
-    }*/
-
-    // trigger activates elevator/dump motor for X seconds at Y speed
-    // TODO: parametrize these two values
-    // Button 1 is the main trigger
     int proximity = colorSensor.getProximity();
 
     SmartDashboard.putNumber("Proximity", proximity);
