@@ -77,10 +77,13 @@ public class Robot extends TimedRobot {
   private final double INTAKE_SPEED = 0.7;
   private final double ELEVATOR_SPEED = 1.0;
 
-  private int automode;
+  // select which version of autonomous code to use
+  // TODO: make switchable in hardware?
+  private int AUTOMODE = 1;
 
   @Override
   // when the robot boots up, configure the cameras and create the switches
+  // TODO: can we just do all this in the class variable declarations? What's the tradeoff?
   public void robotInit() {
     frontCamera = CameraServer.getInstance().startAutomaticCapture();
     backCamera = CameraServer.getInstance().startAutomaticCapture();
@@ -220,75 +223,78 @@ public class Robot extends TimedRobot {
   @Override
   public void autonomousInit() {
     autonomousStart = Timer.getFPGATimestamp();
-
-    if (spacingSwitch.pressed()) {
-      automode = 2;
-    } else {
-      automode = 1;
-    }
   }
 
   @Override
   public void autonomousPeriodic() {
-    if (automode == 1) {
+    
+    if (AUTOMODE == 1) {
       autonomous1();
-    } else if (automode == 2) {
+    } else if (AUTOMODE == 2) {
       autonomous2();
-    } else if (automode == 3) {
+    } else if (AUTOMODE == 3) {
       autonomous3();
     }
   }
 
+  // Option 1: Start in line with port, or off with some angular deviation. Drive forward, then purge.
   private void autonomous1() {
   
-    double elapsedTime = Timer.getFPGATimestamp() - autonomousStart;
+    double DELAY = 0; // could optionally add a delay if we need to wait for another robot to evacuate bottom port
+    double elapsedTime = Timer.getFPGATimestamp() - autonomousStart - DELAY;
     
-    if (elapsedTime < 3) {
+    if (elapsedTime < 3.5) { // drive forward
       robotDrive.arcadeDrive(-0.7, 0);
-      elevatorMotor.set(0); // drive forward first
-    } else if (elapsedTime < 6) {
+      elevatorMotor.set(0);
+    } else if (elapsedTime < 6.5) { // then purge pipeline
       robotDrive.arcadeDrive(0, 0);
-      elevatorMotor.set(ELEVATOR_SPEED); // purge pipeline next
-    } else {
+      elevatorMotor.set(ELEVATOR_SPEED);
+    } else { // then wait
       robotDrive.arcadeDrive(0, 0);
       elevatorMotor.set(0);
     }
   
   }
 
-  // Option 2: Start offset to left side. (TODO: take measurements)
-  // proceed, turn to align, move forward, purge
+  // Option 2: Start offset to left side
+  // forward, turn, forward, purge, wait
+  // TODO: calibrate parameters
   private void autonomous2() {
   
     double elapsedTime = Timer.getFPGATimestamp() - autonomousStart;
     
-    if (elapsedTime < 2) {
+    if (elapsedTime < 2) { // move forward
       robotDrive.arcadeDrive(-0.7, 0);
       elevatorMotor.set(0);
-    } else if (elapsedTime < 3) {
+    } else if (elapsedTime < 3) { // turn
       robotDrive.arcadeDrive(0, 1);
       elevatorMotor.set(0); 
-    } else if (elapsedTime < 4) {
+    } else if (elapsedTime < 4) { // move forward
       robotDrive.arcadeDrive(-0.7, 0);
       elevatorMotor.set(0);
-    } else if (elapsedTime < 7) {
+    } else if (elapsedTime < 7) { // purge
       robotDrive.arcadeDrive(0, 0);
       elevatorMotor.set(ELEVATOR_SPEED);
-    } else {
+    } else { //wait
       robotDrive.arcadeDrive(0, 0);
       elevatorMotor.set(0);
     }
 
   }
 
-  // Option 3: Just drive off the line
+  // Option 3: Just drive off the line if we're completely boxed out of lower port
+  // ideally at least capture a fourth ball
+  // TODO: calibrate parameters
   private void autonomous3() {
 
     double elapsedTime = Timer.getFPGATimestamp() - autonomousStart;
-    if (elapsedTime < 2) {
-      robotDrive.arcadeDrive(1, 0);
-    } else {
+    
+    if (elapsedTime < 3) { // move backwards
+      robotDrive.arcadeDrive(0.7, 0);
+      intakeMotor.set(INTAKE_SPEED)
+    } else { // wait
       robotDrive.arcadeDrive(0, 0);
+      intakeMotor.set(0);
     }
     
   }
