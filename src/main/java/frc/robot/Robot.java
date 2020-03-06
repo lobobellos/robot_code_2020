@@ -138,7 +138,7 @@ public class Robot extends TimedRobot {
     // read throttle to compute speed modification
     // linearly maps value from 1 to -1 into a value that is 0.5 to 1
     Double throttle = (-stick.getThrottle() + 1) / 2;
-    throttle = throttle * 0.5 + 0.5;
+    throttle = throttle * 0.4 + 0.6;
     // System.out.println(speed); // debug
 
     // apply speed modification based on throttle and direction
