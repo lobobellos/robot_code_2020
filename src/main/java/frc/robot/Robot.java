@@ -176,6 +176,7 @@ public class Robot extends TimedRobot {
 
     // after purging, restart the intake
     if (stick.getRawButtonReleased(1)) {
+      manualElevatorOverride = false;
       intakeEnabled = true; // back to intaking after purge
     }
 
