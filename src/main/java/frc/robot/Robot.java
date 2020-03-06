@@ -86,6 +86,7 @@ public class Robot extends TimedRobot {
   private final int MAX_POWER_CELLS = 4; // number of power cells before intake stops
   private final double INTAKE_SPEED = 0.7; // speed of intake motor
   private final double ELEVATOR_SPEED = 1.0; // speed of elevator
+  private final double ROTATION_SCALE = 0.5; // scale factor 0 to 1 to make turns easier to control, but not too slow
 
   // select which version of autonomous code to use
   // TODO: make switchable in hardware?
@@ -141,7 +142,7 @@ public class Robot extends TimedRobot {
 
     // apply speed modification based on throttle and direction
     double driveSpeed = stick.getY() * throttle * direction;
-    double driveRotation = stick.getX() * throttle * 0.5;
+    double driveRotation = stick.getX() * throttle * ROTATION_SCALE;
 
     // instantaneous propulsion is based on the computed speed and rotation
     robotDrive.arcadeDrive(driveSpeed, driveRotation);
