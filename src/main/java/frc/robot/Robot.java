@@ -65,7 +65,7 @@ public class Robot extends TimedRobot {
   private Boolean manualElevatorEnabled = true; // does human grant permission?
   private Boolean manualElevatorOverride = false; // allows manual force operation
 
-  private int balls = 0;
+  private int nPowerCells = 0;
 
   // this variable tracks which end of the robot is currently defined as the "front" of the robot for
   // purposes of steering and camera
@@ -83,7 +83,7 @@ public class Robot extends TimedRobot {
   // TUNABLE PARAMETERS
   private int INTAKETHRESHOLD = 300; // proximity sensor reading that triggers intak
   private double ELEVATOR_INTAKE_DELAY = 0.1; // delay after spacing switch activation; 0.1 seems like a good value for 4-ball spacing
-  private final int MAX_BALLS = 4; // number of balls before intake stops
+  private final int MAX_POWER_CELLS = 4; // number of power cells before intake stops
   private final double INTAKE_SPEED = 0.7; // speed of intake motor
   private final double ELEVATOR_SPEED = 1.0; // speed of elevator
 
@@ -169,7 +169,7 @@ public class Robot extends TimedRobot {
     // reset ball count when you do this, assuming pipeline is purged
     if (stick.getRawButton(1)) {
       manualElevatorOverride = true;
-      balls = 0;
+      nPowerCells = 0;
     }
 
     // manually terminate pulse operation e.g. if switch fails to detect
@@ -206,8 +206,8 @@ public class Robot extends TimedRobot {
 
     // if we changed proximity states, it means a power cell appeared
     if (!lastProximityState && proximityState) {
-      balls++;
-      if (balls == MAX_BALLS) {
+      nPowerCells++;
+      if (nPowerCells == MAX_POWER_CELLS) {
         intakeEnabled = false;
       }
     }
@@ -216,7 +216,7 @@ public class Robot extends TimedRobot {
     lastProximityState = proximityState;
 
     // if there's a power cell at the intake, and we're not full, pulse the pipeline
-    if (proximityState && balls != MAX_BALLS) {
+    if (proximityState && nPowerCells != MAX_POWER_CELLS) {
       elevatorEnabled = true;
       intakeEnabled = false;
     }
@@ -267,12 +267,12 @@ public class Robot extends TimedRobot {
     // TODO: display throttle and speed
     // TODO: display enable/disable and override for mechanisms
     SmartDashboard.putNumber("Proximity", proximity);
-    SmartDashboard.putNumber("Balls", balls);
+    SmartDashboard.putNumber("Power Cells", nPowerCells);
   }
 
   // TODO: can't we just call teleop init?
   private void reset() {
-    balls = 0;
+    nPowerCells = 0;
 
     intakeEnabled = true;
     manualIntakeEnabled = true;
@@ -282,7 +282,7 @@ public class Robot extends TimedRobot {
     manualElevatorEnabled = true;
     manualElevatorOverride = false;
   }
-  
+
   @Override
   public void autonomousInit() {
     autonomousStart = Timer.getFPGATimestamp();
