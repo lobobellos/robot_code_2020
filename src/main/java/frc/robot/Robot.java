@@ -169,12 +169,13 @@ public class Robot extends TimedRobot {
     // reset power cell count when you do this, assuming pipeline is purged
     if (stick.getRawButton(1)) {
       manualElevatorOverride = true;
+      elevatorEnabled = false; // terminate any pulse in progress
       nPowerCells = 0;
     }
 
     // after purging, restart the intake
     if (stick.getRawButtonReleased(1)) {
-      intakeEnabled = true;
+      intakeEnabled = true; // back to intaking after purge
     }
 
     // manually terminate pulse operation e.g. if switch fails to detect
