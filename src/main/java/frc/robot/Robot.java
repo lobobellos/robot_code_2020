@@ -42,7 +42,9 @@ public class Robot extends TimedRobot {
   private final ColorSensorV3 colorSensor = new ColorSensorV3(I2C.Port.kOnboard);
 
   // this variable tracks whether or not the intake motor should be running
-  private Boolean intakeState = true;
+  private Boolean intakeState = true; // allows softare control
+  private Boolean manualIntakeState = true; // allows manual disable
+  private Boolean manualIntakeOverride = false; // allows manual force operation
 
   // this variable tracks which end of the robot is currently defined as the "front" of the robot for
   // purposes of steering and camera
@@ -96,7 +98,9 @@ public class Robot extends TimedRobot {
   // leaving this false is probably the safer bet, though in competition we may want it to be true so that the
   // driver need not remember to activate the intake motor
   public void teleopInit() {
+    manualIntakeState = true;
     intakeState = true;
+    manualIntakeOverride = false;
   }
 
   @Override
@@ -104,18 +108,15 @@ public class Robot extends TimedRobot {
 
     drivecontrol();
 
-    // toggle intake motor state based on button press
-    // button 7 is top left on the base
+    // toggle enable/disable of intake motor
+    // button 7 is top left outer on the base
     if (stick.getRawButtonPressed(7)) {
-      intakeState = !intakeState;
+      manualIntakeState = !manualIntakeState;
     }
 
-    // run the intake motor unless it's been disabled or the pipeline is full
-    if (intakeState && balls != MAX_BALLS) {
-      intakeMotor.set(INTAKE_SPEED);
-    } else {
-      intakeMotor.set(0);
-    }
+    // press and hold override button to force intake
+    // button 8 is top left inner on base
+    manualIntakeOverride = stick.getRawButton(8);
 
     // based on a button press, invert the definition of the "front" of the robot
     // mainly involves inverting controls and which camera is used
@@ -130,10 +131,6 @@ public class Robot extends TimedRobot {
       }
     }
 
-    // since a lower battery means a slower motor, we need to scale the time
-    double elevatorMotorTime = 8 * (12 / RobotController.getBatteryVoltage());
-    boolean elevatorMotorRunning = elevatorIntaking || Timer.getFPGATimestamp() < elevatorStart + elevatorMotorTime;
-
     // read proximity sensor and check if it meets criteria for power cell detection
     int proximity = colorSensor.getProximity();
     boolean proximityState = proximity > INTAKETHRESHOLD;
@@ -141,6 +138,9 @@ public class Robot extends TimedRobot {
     // if we changed proximity states, it means a power cell appeared
     if (!lastProximityState && proximityState) {
       balls++;
+      if (balls == MAX_BALLS) {
+        intakeState = false;
+      }
     }
 
     // keep a record to detect transitions
@@ -150,6 +150,10 @@ public class Robot extends TimedRobot {
     if (proximityState && balls != MAX_BALLS) {
       elevatorIntaking = true;
     }
+
+    // since a lower battery means a slower motor, we need to scale the time
+    double elevatorMotorTime = 8 * (12 / RobotController.getBatteryVoltage());
+    boolean elevatorMotorRunning = elevatorIntaking || Timer.getFPGATimestamp() < elevatorStart + elevatorMotorTime;
 
     // stop when spacing switch is pressed    
     spacingSwitch.periodic(); // reads in new state
@@ -175,11 +179,19 @@ public class Robot extends TimedRobot {
 
     if (Timer.getFPGATimestamp() < elevatorEnd || elevatorIntaking || stick.getRawButton(1)) {
       elevatorMotor.set(ELEVATOR_SPEED);
-      intakeMotor.set(0);
+      intakeState = false;
     } else {
       elevatorMotor.set(0);
+      intakeState = true;
     }
 
+    // run the intake motor if human and software grant permission, or if human forces operation
+    if (manualIntakeState && intakeState || manualIntakeOverride) {
+      intakeMotor.set(INTAKE_SPEED);
+    } else {
+      intakeMotor.set(0);
+    }
+    
     // update display
     // TODO: format display in smart dashboard
     // TODO: display throttle and speed
@@ -187,15 +199,21 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Balls", balls);
 
     // failsafe: reinitialize robot
-    // button 8 is top left inner button on base
-    if(stick.getRawButtonPressed(8)) {
+    // button 11 is bottom right outter button on base
+    if(stick.getRawButtonPressed(11)) {
       reset();
     }
+
+    // TODO: data logging?
   }
 
   private void reset() {
     balls = 0;
+    
+    manualIntakeState = true;
     intakeState = true;
+    manualIntakeOverride = false;
+
     elevatorIntaking = false;
     elevatorEnd = 0;
   }
