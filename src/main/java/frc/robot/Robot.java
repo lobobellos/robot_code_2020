@@ -93,7 +93,7 @@ public class Robot extends TimedRobot {
 
   // select which version of autonomous code to use
   // TODO: make switchable in hardware?
-  private int AUTOMODE = 1;
+  private int AUTOMODE = 4;
 
 
   @Override
@@ -321,6 +321,8 @@ public class Robot extends TimedRobot {
       autonomous2();
     } else if (AUTOMODE == 3) {
       autonomous3();
+    } else if (AUTOMODE == 4) {
+      autonomous4();
     }
   }
 
@@ -389,4 +391,36 @@ public class Robot extends TimedRobot {
     
   }
 
+  // Option 4: Reverse to gather powercells, return to line, drive to power port, purge
+  private void autonomous4() {
+
+    double elapsedTime = Timer.getFPGATimestamp() - autonomousStart;
+    
+    if (elapsedTime < 3) { // try to collect 4th powercell
+      robotDrive.arcadeDrive(0.7, 0);
+      intakeMotor.set(INTAKE_COLLECTION_SPEED);
+      elevatorMotor.set(0);
+    } else if (elapsedTime < 6) { // drive back to line
+      robotDrive.arcadeDrive(-0.7, 0);
+      intakeMotor.set(0);
+      elevatorMotor.set(0);
+    } else if (elapsedTime < 6.12) { // rotate
+      robotDrive.arcadeDrive(-0.7, -1);
+      intakeMotor.set(0);
+      elevatorMotor.set(0);
+    } else if (elapsedTime < 9) { // drive to goal
+      robotDrive.arcadeDrive(-0.7, 0);
+      intakeMotor.set(0);
+      elevatorMotor.set(0);
+    } else if (elapsedTime < 15){ // dump
+      robotDrive.arcadeDrive(0, 0);
+      intakeMotor.set(0);
+      elevatorMotor.set(ELEVATOR_SPEED);
+    } else { // wait
+      robotDrive.arcadeDrive(0, 0);
+      intakeMotor.set(0);
+      elevatorMotor.set(0);
+    }
+
+  }
 }
