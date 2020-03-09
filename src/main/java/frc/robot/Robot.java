@@ -195,7 +195,7 @@ public class Robot extends TimedRobot {
     // mainly involves inverting controls and which camera is used
     // Button 2 is the right thumb trigger
     // TODO: figure out how to get these cameras displayed on the smart dashboard
-    if (stick.getRawButtonPressed(2)) {
+    if (stick.getRawButtonPressed(3)) {
       direction = -direction; // reverse between 1 and -1
       if (direction == -1) {
         cameraServer.setSource(backCamera);
