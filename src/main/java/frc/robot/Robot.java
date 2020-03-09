@@ -84,7 +84,7 @@ public class Robot extends TimedRobot {
 
   // TUNABLE PARAMETERS
   private int INTAKETHRESHOLD = 300; // proximity sensor reading that triggers intak
-  private double ELEVATOR_INTAKE_DELAY = 0.07; // delay after spacing switch activation; 0.07 seems like a good value for 4 power cells
+  private double ELEVATOR_INTAKE_DELAY = 0.068; // delay after spacing switch activation; 0.07 seems like a good value for 4 power cells
   private final int MAX_POWER_CELLS = 4; // number of power cells before intake stops
   private final double INTAKE_COLLECTION_SPEED = 0.8; // speed of intake motor
   private final double INTAKE_HOLD_SPEED = 0.4; // keep the motor running a bit when capturing final power cell to make sure it's held in place
