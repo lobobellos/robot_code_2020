@@ -10,6 +10,7 @@ package frc.robot;
 import edu.wpi.cscore.UsbCamera;
 import edu.wpi.cscore.VideoSink;
 import edu.wpi.first.cameraserver.*;
+import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotController;
@@ -17,6 +18,7 @@ import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.interfaces.Gyro;
 import frc.robot.utils.DigitalInputManager;
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
 import com.revrobotics.ColorSensorV3;
@@ -39,6 +41,8 @@ public class Robot extends TimedRobot {
 
   private final Spark intakeMotor = new Spark(8);
   private final Spark elevatorMotor = new Spark(9);
+
+  private final Gyro gyro = new ADXRS450_Gyro();
 
 
   // SENSORS AND RELATED STATE
@@ -81,6 +85,9 @@ public class Robot extends TimedRobot {
   private double spacingSwitchTime; // when the spacing switch was pressed during a pulse
   private double autonomousStart; // when autonomous mode starts
 
+  // these varbables keep track of things related to quick turning...
+  private double startingAngle = 0; // angle the bot was at when starting
+  private double turningAngle = 0; // the angle the bot should be turned to
 
   // TUNABLE PARAMETERS
   private int INTAKETHRESHOLD = 300; // proximity sensor reading that triggers intak
@@ -100,6 +107,7 @@ public class Robot extends TimedRobot {
   // when the robot boots up, configure the cameras and create the switches
   // TODO: can we just do all this in the class variable declarations? What's the tradeoff?
   public void robotInit() {
+    gyro.calibrate();
     frontCamera = CameraServer.getInstance().startAutomaticCapture();
     backCamera = CameraServer.getInstance().startAutomaticCapture();
     cameraServer = CameraServer.getInstance().getServer();
@@ -150,7 +158,24 @@ public class Robot extends TimedRobot {
     // apply speed modification based on throttle and direction
     double driveSpeed = stick.getY() * throttle * direction;
     double driveRotation = stick.getX() * throttle * ROTATION_SCALE;
-
+    double angle = gyro.getAngle();
+    if (turningAngle > 0) {
+      double offset = angle - startingAngle;
+      if (offset < turningAngle) {
+        driveRotation = 0.7;
+      } else {
+        driveRotation = -1; // attempt to correct for overrotation
+        turningAngle = 0;
+      }
+    } else if (turningAngle < 0) {
+      double offset = startingAngle - angle;
+      if (offset < -turningAngle) {
+        driveRotation = -0.7;
+      } else {
+        driveRotation = 1; // attempt to correct for overrotation
+        turningAngle = 0;
+      }
+    }
     // instantaneous propulsion is based on the computed speed and rotation
     robotDrive.arcadeDrive(driveSpeed, driveRotation);
 
@@ -208,6 +233,20 @@ public class Robot extends TimedRobot {
     // button 11 is bottom left outter button on base
     if(stick.getRawButtonPressed(12)) {
       reset();
+    }
+    // left top button
+    if (stick.getRawButtonPressed(5)) {
+      if (turningAngle == 0) {
+        startingAngle = gyro.getAngle();
+      }
+      turningAngle -= 90;
+    }
+    // right top button
+    if (stick.getRawButtonPressed(6)) {
+      if (turningAngle == 0) {
+        startingAngle = gyro.getAngle();
+      }
+      turningAngle += 90;
     }
 
   }
@@ -289,6 +328,7 @@ public class Robot extends TimedRobot {
     // TODO: display motor speeds
     SmartDashboard.putNumber("Proximity", proximity);
     SmartDashboard.putNumber("Power Cells", nPowerCells);
+    SmartDashboard.putNumber("Angle", gyro.getAngle());
   }
 
   // TODO: can't we just call teleop init?
