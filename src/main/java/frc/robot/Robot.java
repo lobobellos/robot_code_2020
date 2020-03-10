@@ -93,7 +93,7 @@ public class Robot extends TimedRobot {
 
   // select which version of autonomous code to use
   // TODO: make switchable in hardware?
-  private int AUTOMODE = 4;
+  private int AUTOMODE = 5;
 
 
   @Override
@@ -309,7 +309,12 @@ public class Robot extends TimedRobot {
 
   @Override
   public void autonomousInit() {
+    reset();
+    updateDisplay();
     autonomousStart = Timer.getFPGATimestamp();
+    if (AUTOMODE == 5) { // automode 5 keeps track of multiple powercells
+      nPowerCells = MAX_POWER_CELLS - 2; // try to pickup 2 powercells
+    }
   }
 
   @Override
@@ -323,6 +328,8 @@ public class Robot extends TimedRobot {
       autonomous3();
     } else if (AUTOMODE == 4) {
       autonomous4();
+    } else if (AUTOMODE == 5) {
+      autonomous5();
     }
   }
 
@@ -416,6 +423,39 @@ public class Robot extends TimedRobot {
       robotDrive.arcadeDrive(0, 0);
       intakeMotor.set(0);
       elevatorMotor.set(ELEVATOR_SPEED);
+    } else { // wait
+      robotDrive.arcadeDrive(0, 0);
+      intakeMotor.set(0);
+      elevatorMotor.set(0);
+    }
+
+  }
+
+  private void autonomous5() {
+
+    double elapsedTime = Timer.getFPGATimestamp() - autonomousStart;
+    if (elapsedTime < 4) { // try to collect more powercells
+      robotDrive.arcadeDrive(0.7, 0);
+      handleSensorInputs();
+      intakeMotor.set(intakeSpeed);
+      elevatorMotor.set(elevatorEnabled ? ELEVATOR_SPEED : 0); // controlled by sensors
+    } else if (elapsedTime < 8) { // drive back to line
+      robotDrive.arcadeDrive(-0.7, 0);
+      intakeMotor.set(0);
+      elevatorMotor.set(0);
+    } else if (elapsedTime < 8.1) { // rotate
+      robotDrive.arcadeDrive(-0.7, -1);
+      intakeMotor.set(0);
+      elevatorMotor.set(0);
+    } else if (elapsedTime < 11) { // drive to goal
+      robotDrive.arcadeDrive(-0.7, 0);
+      intakeMotor.set(0);
+      elevatorMotor.set(0);
+    } else if (elapsedTime < 15){ // dump
+      robotDrive.arcadeDrive(0, 0);
+      intakeMotor.set(0);
+      elevatorMotor.set(ELEVATOR_SPEED);
+      nPowerCells = 0;
     } else { // wait
       robotDrive.arcadeDrive(0, 0);
       intakeMotor.set(0);
